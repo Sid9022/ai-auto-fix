@@ -1,0 +1,327 @@
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+export type Severity = "low" | "medium" | "high";
+
+export interface DiagnosisResult {
+  fault: string;
+  confidence: number; // 0..1
+  severity: Severity;
+  explanations: string[];
+  actions: string[];
+}
+
+export interface AnalysisOutput {
+  primary: DiagnosisResult;
+  alternatives: Array<Pick<DiagnosisResult, "fault" | "confidence" | "severity">>;
+}
+
+// Very lightweight rules-based analyzer as a stand-in for AI
+function analyzeDescription(text: string): AnalysisOutput {
+  const t = text.toLowerCase();
+  const hits: DiagnosisResult[] = [];
+
+  const add = (
+    fault: string,
+    confidence: number,
+    severity: Severity,
+    explanations: string[],
+    actions: string[]
+  ) => hits.push({ fault, confidence, severity, explanations, actions });
+
+  if (/won't start|no start|clicking|starter|crank|cranking/.test(t)) {
+    add(
+      "Starter motor or solenoid",
+      0.78,
+      "high",
+      [
+        "Clicking sound but engine won't crank",
+        "Lights and electronics may work, indicating battery isn't completely dead",
+      ],
+      [
+        "Check battery health and terminals are tight and clean",
+        "Measure voltage drop while trying to start",
+        "Tap starter lightly and attempt start (temporary)",
+        "Replace starter/solenoid if tests confirm failure",
+      ]
+    );
+  }
+
+  if (/battery|dim lights|dead|won.?t hold charge|slow crank/.test(t)) {
+    add(
+      "Weak or failing battery",
+      0.74,
+      "medium",
+      [
+        "Dim lights and slow cranking",
+        "Older battery or extreme temperatures accelerate wear",
+      ],
+      [
+        "Inspect/clean battery terminals",
+        "Test battery with multimeter (resting >12.4V)",
+        "Load-test at auto parts store",
+        "Replace battery if below spec",
+      ]
+    );
+  }
+
+  if (/alternator|charging light|battery light|whine|electrical smell/.test(t)) {
+    add(
+      "Alternator not charging",
+      0.72,
+      "high",
+      [
+        "Battery light on while driving",
+        "Whining noise changes with RPM",
+      ],
+      [
+        "Measure voltage with engine running (13.8–14.6V typical)",
+        "Inspect alternator belt tension and condition",
+        "Replace alternator if output is low",
+      ]
+    );
+  }
+
+  if (/overheat|overheating|coolant|steam|temperature gauge/.test(t)) {
+    add(
+      "Cooling system issue (thermostat/radiator/fan)",
+      0.76,
+      "high",
+      [
+        "Temperature gauge climbs, possible coolant smell",
+        "Fan may not engage at idle",
+      ],
+      [
+        "Stop safely; allow engine to cool",
+        "Check coolant level and leaks",
+        "Inspect radiator fan and thermostat",
+        "Do not open hot radiator cap; seek service if persistent",
+      ]
+    );
+  }
+
+  if (/squeak|squeal|brake|grind|braking/.test(t)) {
+    add(
+      "Worn brake pads or rotor issue",
+      0.69,
+      "high",
+      [
+        "Squeal/squeak when braking",
+        "Grinding indicates pad worn to metal",
+      ],
+      [
+        "Inspect pad thickness and rotor condition",
+        "Avoid driving if grinding; replace pads/rotors",
+        "Bleed brakes and test safely",
+      ]
+    );
+  }
+
+  if (/shake|vibration|highway|steering wheel/.test(t)) {
+    add(
+      "Wheel balance or suspension component",
+      0.63,
+      "medium",
+      [
+        "Vibration at certain speeds or under braking",
+        "May be uneven tire wear or warped rotors",
+      ],
+      [
+        "Check tire pressures and wear",
+        "Balance/rotate tires",
+        "Inspect control arms, tie rods, bushings",
+      ]
+    );
+  }
+
+  if (/hesitation|misfire|rough idle|check engine|p0\d{3}/.test(t)) {
+    add(
+      "Ignition or fuel delivery (misfire)",
+      0.7,
+      "medium",
+      [
+        "Rough idle, stutter on acceleration",
+        "Check engine light may flash",
+      ],
+      [
+        "Scan for OBD-II codes",
+        "Inspect spark plugs, coils, and fuel filter",
+        "Check for vacuum leaks",
+      ]
+    );
+  }
+
+  if (/slip|revving|transmission|hard shift|delay/.test(t)) {
+    add(
+      "Automatic transmission slipping or low fluid",
+      0.66,
+      "high",
+      [
+        "Engine revs but poor acceleration",
+        "Harsh or delayed shifts",
+      ],
+      [
+        "Check transmission fluid level/condition (if serviceable)",
+        "Address leaks; service fluid/filter",
+        "Seek transmission specialist if unresolved",
+      ]
+    );
+  }
+
+  if (hits.length === 0) {
+    add(
+      "General diagnostic required",
+      0.4,
+      "medium",
+      ["No strong pattern matched your description."],
+      [
+        "Scan for fault codes",
+        "Note when symptoms occur (cold/hot, speed, load)",
+        "Provide more details such as noises, lights, and conditions",
+      ]
+    );
+  }
+
+  hits.sort((a, b) => b.confidence - a.confidence);
+  const [primary, ...rest] = hits;
+  const alternatives = rest.slice(0, 3).map((r) => ({
+    fault: r.fault,
+    confidence: r.confidence * 0.9,
+    severity: r.severity,
+  }));
+
+  return { primary, alternatives };
+}
+
+function formatConfidence(n: number) {
+  return `${Math.round(n * 100)}%`;
+}
+
+export default function DiagnosticForm() {
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<AnalysisOutput | null>(null);
+
+  const severityBadge: Record<Severity, { label: string; variant: "default" | "secondary" | "destructive" }> = useMemo(
+    () => ({
+      low: { label: "Low", variant: "secondary" },
+      medium: { label: "Medium", variant: "default" },
+      high: { label: "High", variant: "destructive" },
+    }),
+    []
+  );
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description.trim()) {
+      toast({
+        title: "Add a brief description",
+        description: "Tell us the symptoms (sounds, lights, behavior).",
+      });
+      return;
+    }
+    setLoading(true);
+    // Simulate AI latency for UX polish
+    setTimeout(() => {
+      const out = analyzeDescription(description);
+      setResult(out);
+      setLoading(false);
+    }, 600);
+  };
+
+  return (
+    <section id="diagnose" aria-labelledby="diagnose-title" className="container mx-auto">
+      <Card className="shadow-elevated">
+        <CardHeader>
+          <CardTitle id="diagnose-title" className="text-2xl">Describe your vehicle issue</CardTitle>
+          <CardDescription>Get instant, AI-style suggestions for likely fault and safe next steps.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <label htmlFor="symptoms" className="sr-only">Problem description</label>
+            <Textarea
+              id="symptoms"
+              placeholder="Example: Car struggles to start in the morning, battery light flickers while driving and there's a whining sound with RPM."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+            />
+            <div className="flex items-center gap-3">
+              <Button type="submit" variant="hero" size="lg" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Analyzing
+                  </>
+                ) : (
+                  <>
+                    <Wrench /> Diagnose now
+                  </>
+                )}
+              </Button>
+              <Badge variant="secondary" className="bg-secondary/60">Free instant analysis</Badge>
+            </div>
+          </form>
+
+          {result && (
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              <article className="md:col-span-2 p-6 rounded-lg border bg-card hover-lift">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <AlertTriangle className="text-destructive" /> Likely fault: {result.primary.fault}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Confidence {formatConfidence(result.primary.confidence)}</p>
+                  </div>
+                  <Badge variant={severityBadge[result.primary.severity].variant}>
+                    Severity: {severityBadge[result.primary.severity].label}
+                  </Badge>
+                </div>
+
+                <ul className="mt-4 list-disc pl-5 space-y-1 text-sm">
+                  {result.primary.explanations.map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                </ul>
+
+                <div className="mt-5">
+                  <h4 className="text-base font-medium flex items-center gap-2">
+                    <Lightbulb /> Recommended actions
+                  </h4>
+                  <ol className="mt-2 list-decimal pl-5 space-y-1 text-sm">
+                    {result.primary.actions.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <p className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
+                  <ShieldCheck /> Safety first: pull over if unsafe; consult a pro for critical issues.
+                </p>
+              </article>
+
+              <aside aria-label="Other possibilities" className="p-6 rounded-lg border bg-card hover-lift">
+                <h4 className="text-base font-semibold flex items-center gap-2"><Gauge /> Other possibilities</h4>
+                <div className="mt-3 space-y-3">
+                  {result.alternatives.map((alt, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{alt.fault}</p>
+                        <p className="text-xs text-muted-foreground">Confidence {formatConfidence(alt.confidence)}</p>
+                      </div>
+                      <Badge variant={severityBadge[alt.severity].variant}>{severityBadge[alt.severity].label}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
