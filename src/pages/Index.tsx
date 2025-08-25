@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Gauge, Shield, Sparkles } from "lucide-react";
+import { Wrench, Gauge, Shield, Sparkles, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import DiagnosticForm from "@/components/DiagnosticForm";
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement | null>(null);
+  const { user, signOut, loading } = useAuth();
 
   useEffect(() => {
     // SEO tags
@@ -54,6 +56,10 @@ const Index = () => {
     heroRef.current.style.setProperty("--spot-y", `${y}%`);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="min-h-screen">
       <header className="container mx-auto py-6 flex items-center justify-between">
@@ -61,9 +67,31 @@ const Index = () => {
           <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow" aria-hidden />
           <span className="text-lg font-semibold">AutoSense AI</span>
         </div>
-        <Button asChild variant="hero" size="lg">
-          <a href="#diagnose" aria-label="Start diagnosis">Start diagnosis</a>
-        </Button>
+        
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span>{user.email}</span>
+              </div>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <Button asChild variant="hero" size="lg">
+              <a href="/auth" aria-label="Sign in">Sign in</a>
+            </Button>
+          )}
+          
+          {user && (
+            <Button asChild variant="secondary" size="lg">
+              <a href="#diagnose" aria-label="Start diagnosis">Start diagnosis</a>
+            </Button>
+          )}
+        </div>
       </header>
 
       <main>
