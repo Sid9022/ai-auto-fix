@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,47 +16,65 @@ serve(async (req) => {
   }
 
   try {
-    const { description, modelEndpoint } = await req.json();
+    const { description, modelName } = await req.json();
     
-    console.log('Received diagnosis request:', { description, modelEndpoint });
+    console.log('Received diagnosis request:', { description, modelName });
 
     let predictedFaultPart = '';
     let confidence = 0;
 
-    // Step 1: Call user's trained model to predict fault part
-    if (modelEndpoint) {
+    // Step 1: Call user's Hugging Face model to predict fault part
+    if (modelName && huggingFaceToken) {
       try {
-        console.log('Calling user model at:', modelEndpoint);
-        const modelResponse = await fetch(modelEndpoint, {
+        console.log('Calling Hugging Face model:', modelName);
+        const modelResponse = await fetch(`https://api-inference.huggingface.co/models/${modelName}`, {
           method: 'POST',
           headers: {
+            'Authorization': `Bearer ${huggingFaceToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
-            text: description,
-            description: description 
+            inputs: description
           }),
         });
 
         if (modelResponse.ok) {
           const modelResult = await modelResponse.json();
-          console.log('Model response:', modelResult);
+          console.log('HuggingFace model response:', modelResult);
           
-          // Adjust these field names based on your model's response format
-          predictedFaultPart = modelResult.prediction || modelResult.fault_part || modelResult.result;
-          confidence = modelResult.confidence || 0.85;
+          // Handle different response formats from HuggingFace
+          if (Array.isArray(modelResult) && modelResult.length > 0) {
+            // Classification model response
+            const topPrediction = modelResult[0];
+            predictedFaultPart = topPrediction.label || topPrediction.prediction;
+            confidence = topPrediction.score || 0.85;
+          } else if (modelResult.generated_text) {
+            // Text generation model response
+            predictedFaultPart = modelResult.generated_text.trim();
+            confidence = 0.85;
+          } else if (typeof modelResult === 'string') {
+            // Direct string response
+            predictedFaultPart = modelResult.trim();
+            confidence = 0.85;
+          } else {
+            // Fallback parsing
+            predictedFaultPart = modelResult.prediction || modelResult.fault_part || modelResult.result || 'Engine System';
+            confidence = modelResult.confidence || 0.85;
+          }
         } else {
-          console.error('Model API error:', await modelResponse.text());
-          throw new Error('Failed to get prediction from model');
+          const errorText = await modelResponse.text();
+          console.error('HuggingFace API error:', errorText);
+          throw new Error(`Failed to get prediction from HuggingFace model: ${errorText}`);
         }
       } catch (error) {
-        console.error('Error calling user model:', error);
+        console.error('Error calling HuggingFace model:', error);
         // Fallback to a basic prediction if model fails
         predictedFaultPart = 'Engine System';
         confidence = 0.50;
       }
     } else {
-      // Fallback when no model endpoint provided
+      // Fallback when no model name provided or no token
+      console.log('No model name provided or missing HuggingFace token, using fallback');
       predictedFaultPart = 'Engine System';
       confidence = 0.50;
     }

@@ -182,7 +182,7 @@ function formatConfidence(n: number) {
 
 export default function DiagnosticForm() {
   const [description, setDescription] = useState("");
-  const [modelEndpoint, setModelEndpoint] = useState("");
+  const [modelName, setModelName] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisOutput | null>(null);
@@ -212,7 +212,7 @@ export default function DiagnosticForm() {
       const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
         body: { 
           description: description.trim(),
-          modelEndpoint: modelEndpoint.trim() || undefined
+          modelName: modelName.trim() || undefined
         }
       });
 
@@ -229,7 +229,7 @@ export default function DiagnosticForm() {
       console.error('Diagnosis error:', error);
       toast({
         title: "Analysis Error",
-        description: "Using fallback analysis. Please check your model endpoint.",
+        description: "Using fallback analysis. Please check your model settings.",
         variant: "destructive"
       });
       // Fallback to local analysis
@@ -265,23 +265,23 @@ export default function DiagnosticForm() {
           {showSettings && (
             <div className="mt-4 p-4 rounded-lg border bg-muted/50 space-y-3">
               <div>
-                <label htmlFor="model-endpoint" className="text-sm font-medium">
-                  Your Model API Endpoint (Optional)
+                <label htmlFor="model-name" className="text-sm font-medium">
+                  HuggingFace Model Name (Optional)
                 </label>
                 <Input
-                  id="model-endpoint"
-                  placeholder="https://your-model-api.com/predict"
-                  value={modelEndpoint}
-                  onChange={(e) => setModelEndpoint(e.target.value)}
+                  id="model-name"
+                  placeholder="your-username/your-model-name"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Enter your Google Colab model's API endpoint. Leave empty to use fallback analysis.
+                  Enter your HuggingFace model name. Leave empty to use fallback analysis.
                 </p>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <ExternalLink className="h-3 w-3" />
-                <span>Your model should accept POST requests with {"{"}"description": "symptom text"{"}"}</span>
+                <span>Model should be trained for text classification or generation tasks</span>
               </div>
             </div>
           )}
@@ -310,7 +310,7 @@ export default function DiagnosticForm() {
               </Button>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-secondary/60">AI-Powered Analysis</Badge>
-                {modelEndpoint && <Badge variant="outline">Custom Model</Badge>}
+                {modelName && <Badge variant="outline">HuggingFace Model</Badge>}
               </div>
             </div>
           </form>
