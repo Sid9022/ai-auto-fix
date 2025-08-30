@@ -1,1 +1,4 @@
 project_id = "pxjebmhdropbidsvxply"
+
+[functions.vehicle-diagnosis]
+verify_jwt = false

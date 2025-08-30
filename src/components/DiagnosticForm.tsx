@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck, Settings, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Severity = "low" | "medium" | "high";
 
@@ -12,7 +14,7 @@ export interface DiagnosisResult {
   fault: string;
   confidence: number; // 0..1
   severity: Severity;
-  explanations: string[];
+  explanation: string;
   actions: string[];
 }
 
@@ -30,19 +32,16 @@ function analyzeDescription(text: string): AnalysisOutput {
     fault: string,
     confidence: number,
     severity: Severity,
-    explanations: string[],
+    explanation: string,
     actions: string[]
-  ) => hits.push({ fault, confidence, severity, explanations, actions });
+  ) => hits.push({ fault, confidence, severity, explanation, actions });
 
   if (/won't start|no start|clicking|starter|crank|cranking/.test(t)) {
     add(
       "Starter motor or solenoid",
       0.78,
       "high",
-      [
-        "Clicking sound but engine won't crank",
-        "Lights and electronics may work, indicating battery isn't completely dead",
-      ],
+      "Clicking sound but engine won't crank. Lights and electronics may work, indicating battery isn't completely dead.",
       [
         "Check battery health and terminals are tight and clean",
         "Measure voltage drop while trying to start",
@@ -57,10 +56,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Weak or failing battery",
       0.74,
       "medium",
-      [
-        "Dim lights and slow cranking",
-        "Older battery or extreme temperatures accelerate wear",
-      ],
+      "Dim lights and slow cranking. Older battery or extreme temperatures accelerate wear.",
       [
         "Inspect/clean battery terminals",
         "Test battery with multimeter (resting >12.4V)",
@@ -75,10 +71,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Alternator not charging",
       0.72,
       "high",
-      [
-        "Battery light on while driving",
-        "Whining noise changes with RPM",
-      ],
+      "Battery light on while driving. Whining noise changes with RPM.",
       [
         "Measure voltage with engine running (13.8–14.6V typical)",
         "Inspect alternator belt tension and condition",
@@ -92,10 +85,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Cooling system issue (thermostat/radiator/fan)",
       0.76,
       "high",
-      [
-        "Temperature gauge climbs, possible coolant smell",
-        "Fan may not engage at idle",
-      ],
+      "Temperature gauge climbs, possible coolant smell. Fan may not engage at idle.",
       [
         "Stop safely; allow engine to cool",
         "Check coolant level and leaks",
@@ -110,10 +100,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Worn brake pads or rotor issue",
       0.69,
       "high",
-      [
-        "Squeal/squeak when braking",
-        "Grinding indicates pad worn to metal",
-      ],
+      "Squeal/squeak when braking. Grinding indicates pad worn to metal.",
       [
         "Inspect pad thickness and rotor condition",
         "Avoid driving if grinding; replace pads/rotors",
@@ -127,10 +114,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Wheel balance or suspension component",
       0.63,
       "medium",
-      [
-        "Vibration at certain speeds or under braking",
-        "May be uneven tire wear or warped rotors",
-      ],
+      "Vibration at certain speeds or under braking. May be uneven tire wear or warped rotors.",
       [
         "Check tire pressures and wear",
         "Balance/rotate tires",
@@ -144,10 +128,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Ignition or fuel delivery (misfire)",
       0.7,
       "medium",
-      [
-        "Rough idle, stutter on acceleration",
-        "Check engine light may flash",
-      ],
+      "Rough idle, stutter on acceleration. Check engine light may flash.",
       [
         "Scan for OBD-II codes",
         "Inspect spark plugs, coils, and fuel filter",
@@ -161,10 +142,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "Automatic transmission slipping or low fluid",
       0.66,
       "high",
-      [
-        "Engine revs but poor acceleration",
-        "Harsh or delayed shifts",
-      ],
+      "Engine revs but poor acceleration. Harsh or delayed shifts.",
       [
         "Check transmission fluid level/condition (if serviceable)",
         "Address leaks; service fluid/filter",
@@ -178,7 +156,7 @@ function analyzeDescription(text: string): AnalysisOutput {
       "General diagnostic required",
       0.4,
       "medium",
-      ["No strong pattern matched your description."],
+      "No strong pattern matched your description.",
       [
         "Scan for fault codes",
         "Note when symptoms occur (cold/hot, speed, load)",
@@ -204,6 +182,8 @@ function formatConfidence(n: number) {
 
 export default function DiagnosticForm() {
   const [description, setDescription] = useState("");
+  const [modelEndpoint, setModelEndpoint] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisOutput | null>(null);
 
@@ -216,7 +196,7 @@ export default function DiagnosticForm() {
     []
   );
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) {
       toast({
@@ -225,21 +205,86 @@ export default function DiagnosticForm() {
       });
       return;
     }
+
     setLoading(true);
-    // Simulate AI latency for UX polish
-    setTimeout(() => {
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
+        body: { 
+          description: description.trim(),
+          modelEndpoint: modelEndpoint.trim() || undefined
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResult(data);
+      toast({
+        title: "AI Diagnosis Complete",
+        description: "Your vehicle symptoms have been analyzed successfully",
+      });
+    } catch (error) {
+      console.error('Diagnosis error:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Using fallback analysis. Please check your model endpoint.",
+        variant: "destructive"
+      });
+      // Fallback to local analysis
       const out = analyzeDescription(description);
       setResult(out);
-      setLoading(false);
-    }, 600);
+    }
+    
+    setLoading(false);
   };
 
   return (
     <section id="diagnose" aria-labelledby="diagnose-title" className="container mx-auto">
       <Card className="shadow-elevated">
         <CardHeader>
-          <CardTitle id="diagnose-title" className="text-2xl">Describe your vehicle issue</CardTitle>
-          <CardDescription>Get instant, AI-style suggestions for likely fault and safe next steps.</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle id="diagnose-title" className="text-2xl">AI Vehicle Diagnosis</CardTitle>
+              <CardDescription>
+                Connect your trained model and get AI-powered fault detection with Gemini-generated solutions
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Model Settings
+            </Button>
+          </div>
+          
+          {showSettings && (
+            <div className="mt-4 p-4 rounded-lg border bg-muted/50 space-y-3">
+              <div>
+                <label htmlFor="model-endpoint" className="text-sm font-medium">
+                  Your Model API Endpoint (Optional)
+                </label>
+                <Input
+                  id="model-endpoint"
+                  placeholder="https://your-model-api.com/predict"
+                  value={modelEndpoint}
+                  onChange={(e) => setModelEndpoint(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter your Google Colab model's API endpoint. Leave empty to use fallback analysis.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ExternalLink className="h-3 w-3" />
+                <span>Your model should accept POST requests with {"{"}"description": "symptom text"{"}"}</span>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -255,15 +300,18 @@ export default function DiagnosticForm() {
               <Button type="submit" variant="hero" size="lg" disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" /> Analyzing
+                    <Loader2 className="animate-spin" /> Analyzing with AI
                   </>
                 ) : (
                   <>
-                    <Wrench /> Diagnose now
+                    <Wrench /> Get AI Diagnosis
                   </>
                 )}
               </Button>
-              <Badge variant="secondary" className="bg-secondary/60">Free instant analysis</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-secondary/60">AI-Powered Analysis</Badge>
+                {modelEndpoint && <Badge variant="outline">Custom Model</Badge>}
+              </div>
             </div>
           </form>
 
@@ -282,25 +330,21 @@ export default function DiagnosticForm() {
                   </Badge>
                 </div>
 
-                <ul className="mt-4 list-disc pl-5 space-y-1 text-sm">
-                  {result.primary.explanations.map((x, i) => (
-                    <li key={i}>{x}</li>
-                  ))}
-                </ul>
+                <div className="mt-4 text-sm leading-relaxed">
+                  {result.primary.explanation}
+                </div>
 
                 <div className="mt-5">
                   <h4 className="text-base font-medium flex items-center gap-2">
-                    <Lightbulb /> Recommended actions
+                    <Lightbulb /> AI-Generated Solution
                   </h4>
-                  <ol className="mt-2 list-decimal pl-5 space-y-1 text-sm">
-                    {result.primary.actions.map((x, i) => (
-                      <li key={i}>{x}</li>
-                    ))}
-                  </ol>
+                  <div className="mt-2 text-sm leading-relaxed whitespace-pre-line">
+                    {result.primary.actions[0]}
+                  </div>
                 </div>
 
                 <p className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
-                  <ShieldCheck /> Safety first: pull over if unsafe; consult a pro for critical issues.
+                  <ShieldCheck /> AI-powered diagnosis with Gemini 1.5. Always consult a professional for safety-critical repairs.
                 </p>
               </article>
 
