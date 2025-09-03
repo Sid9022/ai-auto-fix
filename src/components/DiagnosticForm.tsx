@@ -268,7 +268,7 @@ export default function DiagnosticForm() {
                 <span>Connected to: kingkill1111/vehicle-diagnosis-ai (Gradio)</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Using your trained vehicle diagnosis model. Gemini generates solutions only for unknown faults.
+                Using your trained model for fault prediction. OpenRouter Gemini generates solutions and handles unknown faults.
               </p>
             </div>
           )}
@@ -297,7 +297,7 @@ export default function DiagnosticForm() {
               </Button>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-secondary/60">AI-Powered Analysis</Badge>
-                <Badge variant="outline">Gradio Model</Badge>
+                <Badge variant="outline">HuggingFace + OpenRouter</Badge>
               </div>
             </div>
           </form>
@@ -333,7 +333,7 @@ export default function DiagnosticForm() {
                 )}
 
                 <p className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
-                  <ShieldCheck /> AI-powered diagnosis with Gemini 1.5. Always consult a professional for safety-critical repairs.
+                  <ShieldCheck /> AI-powered diagnosis with HuggingFace + OpenRouter Gemini. Always consult a professional for safety-critical repairs.
                 </p>
               </article>
 

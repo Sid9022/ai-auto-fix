@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,41 +47,87 @@ serve(async (req) => {
       confidence = 0.50;
     }
 
-    // Step 2: Generate solution with Gemini only if fault is UNKNOWN OR OTHER
+    // Step 2: Handle different cases based on HuggingFace output
+    let finalFaultPart = predictedFaultPart;
     let solution = '';
-    let explanation = `The ${predictedFaultPart} has been identified as the likely faulty component.`;
+    let explanation = '';
     
-    const shouldUseFallbackSolution = predictedFaultPart.toUpperCase().includes('UNKNOWN') || 
-                                     predictedFaultPart.toUpperCase().includes('OTHER');
+    const isUnknownFault = predictedFaultPart.toUpperCase().includes('UNKNOWN') || 
+                          predictedFaultPart.toUpperCase().includes('OTHER');
     
-    if (shouldUseFallbackSolution && geminiApiKey) {
-      console.log('Generating one-liner solution with Gemini for:', predictedFaultPart);
-      
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Based on these vehicle symptoms: "${description}". Provide only one short sentence with the most likely repair action needed. Keep it under 20 words.`
+    if (openRouterApiKey) {
+      if (isUnknownFault) {
+        // Case 1: UNKNOWN OR OTHER - get both fault part and solution from OpenRouter
+        console.log('Getting fault diagnosis and solution from OpenRouter for unknown fault');
+        
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemma-3-27b-it:free',
+            messages: [{
+              role: 'user',
+              content: `Based on these vehicle symptoms: "${description}". Provide: 1) The most likely faulty component (max 5 words), 2) A two-sentence repair solution. Format: "FAULT: [component] SOLUTION: [two sentences]"`
             }]
-          }]
-        }),
-      });
+          }),
+        });
 
-      if (geminiResponse.ok) {
-        const geminiResult = await geminiResponse.json();
-        console.log('Gemini response received');
-        
-        const generatedText = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        solution = generatedText.trim().split('.')[0] + '.'; // Take first sentence only
-        
+        if (openRouterResponse.ok) {
+          const openRouterResult = await openRouterResponse.json();
+          console.log('OpenRouter response received for unknown fault');
+          
+          const generatedText = openRouterResult.choices?.[0]?.message?.content || '';
+          const faultMatch = generatedText.match(/FAULT:\s*([^]*?)(?=\s*SOLUTION:)/i);
+          const solutionMatch = generatedText.match(/SOLUTION:\s*([^]*?)$/i);
+          
+          finalFaultPart = faultMatch ? faultMatch[1].trim() : 'Engine System';
+          solution = solutionMatch ? solutionMatch[1].trim() : 'Please consult a qualified mechanic for proper diagnosis and repair.';
+          explanation = `AI analysis identified the likely faulty component based on the symptoms described.`;
+        } else {
+          console.error('OpenRouter API error:', await openRouterResponse.text());
+          finalFaultPart = 'Engine System';
+          solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
+          explanation = `Fallback diagnosis due to API error.`;
+        }
       } else {
-        console.error('Gemini API error:', await geminiResponse.text());
-        solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
+        // Case 2: Specific fault from HuggingFace - get solution from OpenRouter
+        console.log('Getting solution from OpenRouter for HuggingFace fault:', predictedFaultPart);
+        explanation = `The ${predictedFaultPart} has been identified as the likely faulty component.`;
+        
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemma-3-27b-it:free',
+            messages: [{
+              role: 'user',
+              content: `Vehicle symptoms: "${description}". Predicted fault: "${predictedFaultPart}". Provide a two-sentence repair solution for this specific fault.`
+            }]
+          }),
+        });
+
+        if (openRouterResponse.ok) {
+          const openRouterResult = await openRouterResponse.json();
+          console.log('OpenRouter response received for specific fault');
+          
+          const generatedText = openRouterResult.choices?.[0]?.message?.content || '';
+          solution = generatedText.trim();
+        } else {
+          console.error('OpenRouter API error:', await openRouterResponse.text());
+          solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
+        }
       }
+    } else {
+      // Fallback if no OpenRouter API key
+      finalFaultPart = isUnknownFault ? 'Engine System' : predictedFaultPart;
+      explanation = `The ${finalFaultPart} has been identified as the likely faulty component.`;
+      solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
     }
 
     // Determine severity based on fault part
@@ -89,15 +135,15 @@ serve(async (req) => {
     const highSeverityParts = ['engine', 'brake', 'transmission', 'steering'];
     const lowSeverityParts = ['air conditioning', 'radio', 'lights'];
     
-    if (highSeverityParts.some(part => predictedFaultPart.toLowerCase().includes(part))) {
+    if (highSeverityParts.some(part => finalFaultPart.toLowerCase().includes(part))) {
       severity = 'high';
-    } else if (lowSeverityParts.some(part => predictedFaultPart.toLowerCase().includes(part))) {
+    } else if (lowSeverityParts.some(part => finalFaultPart.toLowerCase().includes(part))) {
       severity = 'low';
     }
 
     const result = {
       primary: {
-        fault: predictedFaultPart,
+        fault: finalFaultPart,
         confidence: Math.round(confidence * 100) / 100,
         severity,
         explanation,
