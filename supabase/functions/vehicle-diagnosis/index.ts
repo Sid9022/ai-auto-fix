@@ -1,8 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,112 +16,72 @@ serve(async (req) => {
   }
 
   try {
-    const { description, modelName } = await req.json();
+    const { description } = await req.json();
     
-    console.log('Received diagnosis request:', { description, modelName });
+    console.log('Received diagnosis request:', { description });
 
     let predictedFaultPart = '';
-    let confidence = 0;
+    let confidence = 0.85;
 
-    // Step 1: Call user's Hugging Face model to predict fault part
-    if (modelName && huggingFaceToken) {
-      try {
-        console.log('Calling Hugging Face model:', modelName);
-        const modelResponse = await fetch(`https://api-inference.huggingface.co/models/${modelName}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${huggingFaceToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            inputs: description
-          }),
-        });
+    // Step 1: Call user's Gradio model to predict fault part
+    try {
+      console.log('Connecting to Gradio model: kingkill1111/vehicle-diagnosis-ai');
+      const client = await Client.connect("kingkill1111/vehicle-diagnosis-ai");
+      const result = await client.predict("/predict", { 
+        description: description 
+      });
 
-        if (modelResponse.ok) {
-          const modelResult = await modelResponse.json();
-          console.log('HuggingFace model response:', modelResult);
-          
-          // Handle different response formats from HuggingFace
-          if (Array.isArray(modelResult) && modelResult.length > 0) {
-            // Classification model response
-            const topPrediction = modelResult[0];
-            predictedFaultPart = topPrediction.label || topPrediction.prediction;
-            confidence = topPrediction.score || 0.85;
-          } else if (modelResult.generated_text) {
-            // Text generation model response
-            predictedFaultPart = modelResult.generated_text.trim();
-            confidence = 0.85;
-          } else if (typeof modelResult === 'string') {
-            // Direct string response
-            predictedFaultPart = modelResult.trim();
-            confidence = 0.85;
-          } else {
-            // Fallback parsing
-            predictedFaultPart = modelResult.prediction || modelResult.fault_part || modelResult.result || 'Engine System';
-            confidence = modelResult.confidence || 0.85;
-          }
-        } else {
-          const errorText = await modelResponse.text();
-          console.error('HuggingFace API error:', errorText);
-          throw new Error(`Failed to get prediction from HuggingFace model: ${errorText}`);
-        }
-      } catch (error) {
-        console.error('Error calling HuggingFace model:', error);
-        // Fallback to a basic prediction if model fails
+      console.log('Gradio model response:', result.data);
+      
+      // Extract fault part from Gradio response
+      if (result.data && result.data.length > 0) {
+        predictedFaultPart = result.data[0].toString().trim();
+      } else {
         predictedFaultPart = 'Engine System';
         confidence = 0.50;
       }
-    } else {
-      // Fallback when no model name provided or no token
-      console.log('No model name provided or missing HuggingFace token, using fallback');
+    } catch (error) {
+      console.error('Error calling Gradio model:', error);
+      // Fallback to a basic prediction if model fails
       predictedFaultPart = 'Engine System';
       confidence = 0.50;
     }
 
-    // Step 2: Use Gemini to generate detailed solution
-    console.log('Generating solution with Gemini for fault part:', predictedFaultPart);
-    
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `You are an expert automotive technician. A vehicle diagnostic system has identified "${predictedFaultPart}" as the likely faulty component based on these symptoms: "${description}".
-
-Please provide:
-1. A detailed explanation of why this fault occurs
-2. Step-by-step troubleshooting instructions
-3. Recommended repair actions
-4. Prevention tips
-
-Keep the response practical and helpful for both mechanics and car owners.`
-          }]
-        }]
-      }),
-    });
-
+    // Step 2: Generate solution with Gemini only if fault is UNKNOWN OR OTHER
     let solution = '';
-    let explanation = '';
+    let explanation = `The ${predictedFaultPart} has been identified as the likely faulty component.`;
+    
+    const shouldUseFallbackSolution = predictedFaultPart.toUpperCase().includes('UNKNOWN') || 
+                                     predictedFaultPart.toUpperCase().includes('OTHER');
+    
+    if (shouldUseFallbackSolution && geminiApiKey) {
+      console.log('Generating one-liner solution with Gemini for:', predictedFaultPart);
+      
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Based on these vehicle symptoms: "${description}". Provide only one short sentence with the most likely repair action needed. Keep it under 20 words.`
+            }]
+          }]
+        }),
+      });
 
-    if (geminiResponse.ok) {
-      const geminiResult = await geminiResponse.json();
-      console.log('Gemini response received');
-      
-      const generatedText = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      // Split the response into explanation and solution
-      const lines = generatedText.split('\n');
-      explanation = lines.slice(0, 3).join(' ');
-      solution = generatedText;
-      
-    } else {
-      console.error('Gemini API error:', await geminiResponse.text());
-      explanation = `The ${predictedFaultPart} may be malfunctioning based on the described symptoms.`;
-      solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
+      if (geminiResponse.ok) {
+        const geminiResult = await geminiResponse.json();
+        console.log('Gemini response received');
+        
+        const generatedText = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        solution = generatedText.trim().split('.')[0] + '.'; // Take first sentence only
+        
+      } else {
+        console.error('Gemini API error:', await geminiResponse.text());
+        solution = 'Please consult a qualified mechanic for proper diagnosis and repair.';
+      }
     }
 
     // Determine severity based on fault part
@@ -141,9 +101,9 @@ Keep the response practical and helpful for both mechanics and car owners.`
         confidence: Math.round(confidence * 100) / 100,
         severity,
         explanation,
-        actions: [solution]
+        actions: solution ? [solution] : []
       },
-      alternatives: [] // Could be enhanced to provide alternative possibilities
+      alternatives: []
     };
 
     console.log('Sending diagnosis result:', result);

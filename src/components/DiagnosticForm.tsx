@@ -211,8 +211,7 @@ export default function DiagnosticForm() {
     try {
       const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
         body: { 
-          description: description.trim(),
-          modelName: modelName.trim() || undefined
+          description: description.trim()
         }
       });
 
@@ -264,25 +263,13 @@ export default function DiagnosticForm() {
           
           {showSettings && (
             <div className="mt-4 p-4 rounded-lg border bg-muted/50 space-y-3">
-              <div>
-                <label htmlFor="model-name" className="text-sm font-medium">
-                  HuggingFace Model Name (Optional)
-                </label>
-                <Input
-                  id="model-name"
-                  placeholder="your-username/your-model-name"
-                  value={modelName}
-                  onChange={(e) => setModelName(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter your HuggingFace model name. Leave empty to use fallback analysis.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ExternalLink className="h-3 w-3" />
-                <span>Model should be trained for text classification or generation tasks</span>
+                <span>Connected to: kingkill1111/vehicle-diagnosis-ai (Gradio)</span>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Using your trained vehicle diagnosis model. Gemini generates solutions only for unknown faults.
+              </p>
             </div>
           )}
         </CardHeader>
@@ -310,7 +297,7 @@ export default function DiagnosticForm() {
               </Button>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-secondary/60">AI-Powered Analysis</Badge>
-                {modelName && <Badge variant="outline">HuggingFace Model</Badge>}
+                <Badge variant="outline">Gradio Model</Badge>
               </div>
             </div>
           </form>
@@ -334,14 +321,16 @@ export default function DiagnosticForm() {
                   {result.primary.explanation}
                 </div>
 
-                <div className="mt-5">
-                  <h4 className="text-base font-medium flex items-center gap-2">
-                    <Lightbulb /> AI-Generated Solution
-                  </h4>
-                  <div className="mt-2 text-sm leading-relaxed whitespace-pre-line">
-                    {result.primary.actions[0]}
+                {result.primary.actions.length > 0 && (
+                  <div className="mt-5">
+                    <h4 className="text-base font-medium flex items-center gap-2">
+                      <Lightbulb /> AI-Generated Solution
+                    </h4>
+                    <div className="mt-2 text-sm leading-relaxed">
+                      {result.primary.actions[0]}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <p className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
                   <ShieldCheck /> AI-powered diagnosis with Gemini 1.5. Always consult a professional for safety-critical repairs.
