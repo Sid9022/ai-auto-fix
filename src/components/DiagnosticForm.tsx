@@ -240,13 +240,13 @@ export default function DiagnosticForm() {
   };
 
   return (
-    <section id="diagnose" aria-labelledby="diagnose-title" className="container mx-auto">
+    <section id="diagnose" aria-labelledby="diagnose-title" className="w-full max-w-none">
       <Card className="shadow-elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle id="diagnose-title" className="text-2xl">AI Vehicle Diagnosis</CardTitle>
-              <CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle id="diagnose-title" className="text-xl sm:text-2xl">AI Vehicle Diagnosis</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
                 Connect your trained model and get AI-powered fault detection with Gemini-generated solutions
               </CardDescription>
             </div>
@@ -254,10 +254,10 @@ export default function DiagnosticForm() {
               variant="outline"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 flex-shrink-0"
             >
               <Settings className="h-4 w-4" />
-              Model Settings
+              <span className="hidden sm:inline">Model Settings</span>
             </Button>
           </div>
           
@@ -273,7 +273,7 @@ export default function DiagnosticForm() {
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <form onSubmit={onSubmit} className="space-y-4">
             <label htmlFor="symptoms" className="sr-only">Problem description</label>
             <Textarea
@@ -281,38 +281,40 @@ export default function DiagnosticForm() {
               placeholder="Example: Car struggles to start in the morning, battery light flickers while driving and there's a whining sound with RPM."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={5}
+              rows={4}
+              className="min-h-[120px] sm:min-h-[140px]"
             />
-            <div className="flex items-center gap-3">
-              <Button type="submit" variant="hero" size="lg" disabled={loading}>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Button type="submit" variant="hero" size="lg" disabled={loading} className="w-full sm:w-auto">
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" /> Analyzing with AI
+                    <Loader2 className="animate-spin mr-2" /> Analyzing with AI
                   </>
                 ) : (
                   <>
-                    <Wrench /> Get AI Diagnosis
+                    <Wrench className="mr-2" /> Get AI Diagnosis
                   </>
                 )}
               </Button>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-secondary/60">AI-Powered Analysis</Badge>
-                <Badge variant="outline">HuggingFace + OpenRouter</Badge>
+              <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <Badge variant="secondary" className="bg-secondary/60 text-xs">AI-Powered Analysis</Badge>
+                <Badge variant="outline" className="text-xs">HuggingFace + OpenRouter</Badge>
               </div>
             </div>
           </form>
 
           {result && (
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
-              <article className="md:col-span-2 p-6 rounded-lg border bg-card hover-lift">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold flex items-center gap-2">
-                      <AlertTriangle className="text-destructive" /> Likely fault: {result.primary.fault}
+            <div className="mt-8 grid gap-4 lg:gap-6 lg:grid-cols-3">
+              <article className="lg:col-span-2 p-4 sm:p-6 rounded-lg border bg-card hover-lift">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-xl font-semibold flex items-center gap-2 flex-wrap">
+                      <AlertTriangle className="text-destructive flex-shrink-0" /> 
+                      <span className="break-words">Likely fault: {result.primary.fault}</span>
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">Confidence {formatConfidence(result.primary.confidence)}</p>
                   </div>
-                  <Badge variant={severityBadge[result.primary.severity].variant}>
+                  <Badge variant={severityBadge[result.primary.severity].variant} className="flex-shrink-0">
                     Severity: {severityBadge[result.primary.severity].label}
                   </Badge>
                 </div>
@@ -324,7 +326,7 @@ export default function DiagnosticForm() {
                 {result.primary.actions.length > 0 && (
                   <div className="mt-5">
                     <h4 className="text-base font-medium flex items-center gap-2">
-                      <Lightbulb /> AI-Generated Solution
+                      <Lightbulb className="flex-shrink-0" /> AI-Generated Solution
                     </h4>
                     <div className="mt-2 text-sm leading-relaxed">
                       {result.primary.actions[0]}
@@ -332,21 +334,26 @@ export default function DiagnosticForm() {
                   </div>
                 )}
 
-                <p className="mt-4 text-xs text-muted-foreground flex items-center gap-2">
-                  <ShieldCheck /> AI-powered diagnosis with HuggingFace + OpenRouter Gemini. Always consult a professional for safety-critical repairs.
+                <p className="mt-4 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center gap-2">
+                  <ShieldCheck className="flex-shrink-0" /> 
+                  <span>AI-powered diagnosis with HuggingFace + OpenRouter Gemini. Always consult a professional for safety-critical repairs.</span>
                 </p>
               </article>
 
-              <aside aria-label="Other possibilities" className="p-6 rounded-lg border bg-card hover-lift">
-                <h4 className="text-base font-semibold flex items-center gap-2"><Gauge /> Other possibilities</h4>
+              <aside aria-label="Other possibilities" className="p-4 sm:p-6 rounded-lg border bg-card hover-lift">
+                <h4 className="text-base font-semibold flex items-center gap-2">
+                  <Gauge className="flex-shrink-0" /> Other possibilities
+                </h4>
                 <div className="mt-3 space-y-3">
                   {result.alternatives.map((alt, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{alt.fault}</p>
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium break-words">{alt.fault}</p>
                         <p className="text-xs text-muted-foreground">Confidence {formatConfidence(alt.confidence)}</p>
                       </div>
-                      <Badge variant={severityBadge[alt.severity].variant}>{severityBadge[alt.severity].label}</Badge>
+                      <Badge variant={severityBadge[alt.severity].variant} className="flex-shrink-0 w-fit">
+                        {severityBadge[alt.severity].label}
+                      </Badge>
                     </div>
                   ))}
                 </div>

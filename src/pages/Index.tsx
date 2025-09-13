@@ -62,80 +62,82 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <header className="container mx-auto py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow" aria-hidden />
-          <span className="text-lg font-semibold">AutoSense AI</span>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>{user.email}</span>
-              </div>
-              <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign out
-              </Button>
-            </>
-          ) : (
-            <Button asChild variant="hero" size="lg">
-              <a href="/auth" aria-label="Sign in">Sign in</a>
-            </Button>
-          )}
+      <header className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow" aria-hidden />
+            <span className="text-lg font-semibold">AutoSense AI</span>
+          </div>
           
-          {user && (
-            <Button asChild variant="secondary" size="lg">
-              <a href="#diagnose" aria-label="Start diagnosis">Start diagnosis</a>
-            </Button>
-          )}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {user ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="truncate max-w-32 md:max-w-none">{user.email}</span>
+                </div>
+                <Button variant="outline" onClick={handleSignOut} size="sm" className="sm:size-default">
+                  <LogOut className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign out</span>
+                </Button>
+              </>
+            ) : (
+              <Button asChild variant="hero" size="sm" className="sm:size-lg">
+                <a href="/auth" aria-label="Sign in">Sign in</a>
+              </Button>
+            )}
+            
+            {user && (
+              <Button asChild variant="secondary" size="sm" className="sm:size-lg">
+                <a href="#diagnose" aria-label="Start diagnosis">Start diagnosis</a>
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
       <main>
         {/* Hero */}
         <section ref={heroRef} onMouseMove={onHeroMouseMove} className="bg-spotlight">
-          <div className="container mx-auto py-16 md:py-24 text-center">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+          <div className="container mx-auto px-4 py-16 md:py-24 text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight">
               AI Vehicle Diagnostic
             </h1>
-            <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Describe your car’s symptoms and get likely faults with step‑by‑step fixes. No hardware, no hassle.
+            <p className="mt-4 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+              Describe your car's symptoms and get likely faults with step‑by‑step fixes. No hardware, no hassle.
             </p>
-            <div className="mt-8 flex items-center justify-center gap-4">
-              <Button variant="hero" size="lg" asChild>
-                <a href="#diagnose"><Wrench /> Diagnose my car</a>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button variant="hero" size="lg" asChild className="w-full sm:w-auto">
+                <a href="#diagnose"><Wrench className="mr-2" /> Diagnose my car</a>
               </Button>
-              <Button variant="secondary" size="lg" asChild>
-                <a href="#how-it-works"><Sparkles /> How it works</a>
+              <Button variant="secondary" size="lg" asChild className="w-full sm:w-auto">
+                <a href="#how-it-works"><Sparkles className="mr-2" /> How it works</a>
               </Button>
             </div>
 
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-12 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="hover-lift">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <Wrench />
-                  <div>
+                <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
+                  <Wrench className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="text-center sm:text-left">
                     <p className="font-semibold">Text-based diagnosis</p>
                     <p className="text-sm text-muted-foreground">Type symptoms; get likely fault and actions.</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="hover-lift">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <Gauge />
-                  <div>
+                <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
+                  <Gauge className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="text-center sm:text-left">
                     <p className="font-semibold">Confidence scoring</p>
                     <p className="text-sm text-muted-foreground">See confidence and other possibilities.</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <Shield />
-                  <div>
+              <Card className="hover-lift sm:col-span-2 lg:col-span-1">
+                <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
+                  <Shield className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="text-center sm:text-left">
                     <p className="font-semibold">Safety first</p>
                     <p className="text-sm text-muted-foreground">Clear guidance when to stop and seek help.</p>
                   </div>
@@ -147,14 +149,16 @@ const Index = () => {
 
         {/* Diagnostic form */}
         <section className="py-12 md:py-16" id="how-it-works">
-          <div className="container mx-auto">
+          <div className="container mx-auto px-4">
             <DiagnosticForm />
           </div>
         </section>
       </main>
 
-      <footer className="py-10 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} AutoSense AI • For guidance only, not a replacement for professional inspection.
+      <footer className="py-10 px-4 text-center text-xs sm:text-sm text-muted-foreground">
+        <div className="container mx-auto">
+          © {new Date().getFullYear()} AutoSense AI • For guidance only, not a replacement for professional inspection.
+        </div>
       </footer>
     </div>
   );
