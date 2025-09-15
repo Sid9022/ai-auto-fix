@@ -4,9 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck, Settings, ExternalLink } from "lucide-react";
+import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck, Settings, ExternalLink, FileDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PDFReportGenerator, type PDFReportData } from "@/lib/pdfGenerator";
 
 export type Severity = "low" | "medium" | "high";
 
@@ -21,6 +22,7 @@ export interface DiagnosisResult {
 export interface AnalysisOutput {
   primary: DiagnosisResult;
   alternatives: Array<Pick<DiagnosisResult, "fault" | "confidence" | "severity">>;
+  pdfContent?: string;
 }
 
 // Very lightweight rules-based analyzer as a stand-in for AI
@@ -185,6 +187,7 @@ export default function DiagnosticForm() {
   const [modelName, setModelName] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [result, setResult] = useState<AnalysisOutput | null>(null);
 
   const severityBadge: Record<Severity, { label: string; variant: "default" | "secondary" | "destructive" }> = useMemo(
@@ -237,6 +240,52 @@ export default function DiagnosticForm() {
     }
     
     setLoading(false);
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!result) return;
+
+    setPdfLoading(true);
+    try {
+      let pdfContent = result.pdfContent;
+
+      // If we don't have PDF content, generate it
+      if (!pdfContent) {
+        const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
+          body: { description: description.trim(), generatePDFContent: true }
+        });
+
+        if (error) throw error;
+        pdfContent = data.pdfContent;
+      }
+
+      const reportData: PDFReportData = {
+        predictedFault: result.primary.fault,
+        confidence: result.primary.confidence * 100, // Convert to percentage
+        severity: result.primary.severity,
+        explanation: result.primary.explanation,
+        recommendedActions: result.primary.actions.join(" "),
+        description: description,
+        pdfContent: pdfContent
+      };
+
+      const pdfGenerator = new PDFReportGenerator();
+      pdfGenerator.generatePDF(reportData);
+
+      toast({
+        title: "PDF Generated",
+        description: "Your diagnostic report has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
@@ -296,6 +345,26 @@ export default function DiagnosticForm() {
                   </>
                 )}
               </Button>
+              {result && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={handleGeneratePDF}
+                  disabled={pdfLoading}
+                  className="w-full sm:w-auto"
+                >
+                  {pdfLoading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" /> Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="mr-2" /> Download PDF Report
+                    </>
+                  )}
+                </Button>
+              )}
               <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                 <Badge variant="secondary" className="bg-secondary/60 text-xs">AI-Powered Analysis</Badge>
                 <Badge variant="outline" className="text-xs">HuggingFace + OpenRouter</Badge>

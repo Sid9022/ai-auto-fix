@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { description } = await req.json();
+    const { description, generatePDFContent = false } = await req.json();
     
     console.log('Received diagnosis request:', { description });
 
@@ -141,6 +141,100 @@ serve(async (req) => {
       severity = 'low';
     }
 
+    // Generate PDF content if requested
+    let pdfContent = null;
+    if (generatePDFContent && openRouterApiKey) {
+      try {
+        const pdfPrompt = `Generate a comprehensive vehicle diagnostic report based on the following information:
+        
+Problem Description: ${description}
+Primary Fault: ${finalFaultPart}
+Confidence: ${Math.round(confidence * 100)}%
+Severity: ${severity}
+Explanation: ${explanation}
+Recommended Actions: ${solution}
+
+Please create a detailed, professional diagnostic report in the following format:
+
+VEHICLE DIAGNOSTIC REPORT
+========================
+
+EXECUTIVE SUMMARY
+- Primary Fault: ${finalFaultPart}
+- Severity Level: ${severity.toUpperCase()}
+- Confidence Level: ${Math.round(confidence * 100)}%
+- Safety Impact: [brief assessment based on severity]
+
+PROBLEM DESCRIPTION
+- Symptoms Reported: ${description}
+- Analysis Date: ${new Date().toLocaleDateString()}
+- Diagnostic Method: AI-Powered Analysis
+
+DETAILED DIAGNOSIS
+- Root Cause Analysis: [detailed technical explanation]
+- Technical Details: [component-specific information]
+- System Impact: [how this affects the vehicle]
+
+RECOMMENDED SOLUTION
+- Immediate Actions: [what to do right now]
+- Repair Procedures: [step-by-step instructions]
+- Parts Required: [estimated components needed]
+- Professional Services: [when to seek mechanic help]
+
+SAFETY CONSIDERATIONS
+- [Specific safety warnings for this fault]
+- [Driving restrictions if any]
+
+COST ESTIMATES
+- Parts: [rough estimate range]
+- Labor: [estimated hours and cost range]
+- Total: [combined estimate]
+
+FOLLOW-UP RECOMMENDATIONS
+- [Maintenance tips to prevent recurrence]
+- [Monitoring advice]
+- [When to seek professional consultation]
+
+DISCLAIMER
+This AI-powered diagnostic report is for informational purposes only. Professional mechanical inspection is recommended for accurate diagnosis and safe repairs.
+
+Format this as a clean, professional report with clear sections and proper formatting.`;
+
+        const pdfResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemma-2-9b-it:free',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a professional automotive diagnostic expert. Generate comprehensive, technical, and well-structured diagnostic reports.'
+              },
+              {
+                role: 'user',
+                content: pdfPrompt
+              }
+            ],
+            max_tokens: 2000,
+            temperature: 0.3
+          })
+        });
+
+        if (pdfResponse.ok) {
+          const pdfData = await pdfResponse.json();
+          pdfContent = pdfData.choices[0]?.message?.content || null;
+          console.log('PDF content generated successfully');
+        } else {
+          console.error('Failed to generate PDF content:', pdfResponse.statusText);
+        }
+      } catch (pdfError) {
+        console.error('Error generating PDF content:', pdfError);
+      }
+    }
+
     const result = {
       primary: {
         fault: finalFaultPart,
@@ -149,7 +243,8 @@ serve(async (req) => {
         explanation,
         actions: solution ? [solution] : []
       },
-      alternatives: []
+      alternatives: [],
+      pdfContent: pdfContent
     };
 
     console.log('Sending diagnosis result:', result);
