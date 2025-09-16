@@ -169,7 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('signIn called with:', { email, isSupabaseAvailable, isDevelopmentMode });
+    
     if (!isSupabaseAvailable && isDevelopmentMode) {
+      console.log('Using mock signin...');
       // Mock signin in development mode when Supabase is not available
       const mockUser = createMockUser(email);
       const mockSession = {
@@ -184,19 +187,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(mockUser);
       setSession(mockSession);
       
+      console.log('Mock signin successful');
       return { error: null };
     }
 
+    console.log('Attempting Supabase signin...');
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      return { error };
-    } catch (networkError) {
-      // If in development mode and network fails, fall back to mock
-      if (isDevelopmentMode) {
-        console.warn('Supabase signin failed, using mock auth:', networkError);
+      console.log('Supabase signin result:', { error });
+      
+      // In development mode, if there's any Supabase error, fall back to mock auth
+      if (error && isDevelopmentMode) {
+        console.log('Supabase error detected in development, using mock auth fallback');
         setIsSupabaseAvailable(false);
         
         const mockUser = createMockUser(email);
@@ -212,6 +217,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(mockUser);
         setSession(mockSession);
         
+        console.log('Mock fallback signin successful');
+        return { error: null };
+      }
+      
+      return { error };
+    } catch (networkError) {
+      console.warn('Supabase signin failed with exception:', networkError);
+      
+      // If in development mode and network fails, fall back to mock
+      if (isDevelopmentMode) {
+        console.log('Exception caught, falling back to mock auth');
+        setIsSupabaseAvailable(false);
+        
+        const mockUser = createMockUser(email);
+        const mockSession = {
+          user: mockUser,
+          access_token: 'mock-access-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          refresh_token: 'mock-refresh-token',
+        } as any;
+        
+        localStorage.setItem('mock-auth-session', JSON.stringify(mockSession));
+        setUser(mockUser);
+        setSession(mockSession);
+        
+        console.log('Mock fallback signin successful');
         return { error: null };
       }
       
@@ -220,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? networkError.message 
         : 'Network error occurred';
       
+      console.error('Network error in production mode:', errorMessage);
       return { 
         error: { 
           message: `Connection failed: ${errorMessage}. Please check your internet connection or try again later.`
