@@ -32,7 +32,43 @@ export class PDFReportGenerator {
         this.currentY = 20;
       }
       this.doc.text(line, this.margin, this.currentY);
-      this.currentY += fontSize * 0.5;
+      this.currentY += (fontSize * 0.35) + 2; // Better line spacing
+    }
+  }
+
+  private parsePlainTextContent(content: string): void {
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (!line) {
+        this.currentY += 4; // Blank line spacing
+        continue;
+      }
+      
+      // Check if line is a section header (all caps)
+      if (line === line.toUpperCase() && line.length > 3 && !line.startsWith('-') && !line.match(/^\d+\./)) {
+        this.currentY += 8; // Space before section
+        this.addText(line, 12, true);
+        this.currentY += 4; // Space after section header
+      }
+      // Check if line starts with dash (bullet point)
+      else if (line.startsWith('-')) {
+        const bulletText = line.substring(1).trim();
+        this.addText(`• ${bulletText}`, 10, false);
+        this.currentY += 2;
+      }
+      // Check if line starts with number (numbered list)
+      else if (line.match(/^\d+\./)) {
+        this.addText(line, 10, false);
+        this.currentY += 2;
+      }
+      // Regular paragraph text
+      else {
+        this.addText(line, 10, false);
+        this.currentY += 3;
+      }
     }
   }
 
@@ -85,28 +121,9 @@ export class PDFReportGenerator {
   generatePDF(data: PDFReportData): void {
     this.addHeader();
 
-    if (data.pdfContent) {
-      // Use AI-generated content if available
-      const sections = data.pdfContent.split('\n\n');
-      
-      sections.forEach(section => {
-        const lines = section.split('\n');
-        if (lines.length > 0) {
-          const title = lines[0];
-          const content = lines.slice(1).join('\n');
-          
-          if (title.includes('===') || title.includes('---')) {
-            return; // Skip separator lines
-          }
-          
-          if (content.trim()) {
-            this.addSection(title, content);
-          } else if (title.trim()) {
-            this.addText(title, 11, true);
-            this.currentY += 5;
-          }
-        }
-      });
+    if (data.pdfContent && data.pdfContent.trim()) {
+      // Use AI-generated plain text content
+      this.parsePlainTextContent(data.pdfContent);
     } else {
       // Fallback to basic report structure
       this.addSection('EXECUTIVE SUMMARY', 

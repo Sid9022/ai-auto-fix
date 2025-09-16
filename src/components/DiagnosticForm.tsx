@@ -247,39 +247,69 @@ export default function DiagnosticForm() {
 
     setPdfLoading(true);
     try {
-      let pdfContent = result.pdfContent;
+      console.log('Starting PDF generation with AI content...');
 
-      // If we don't have PDF content, generate it
-      if (!pdfContent) {
-        const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
-          body: { description: description.trim(), generatePDFContent: true }
-        });
+      // Always generate fresh PDF content for better quality
+      const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
+        body: { description: description.trim(), generatePDFContent: true }
+      });
 
-        if (error) throw error;
-        pdfContent = data.pdfContent;
+      if (error) {
+        console.error('PDF generation error:', error);
+        throw error;
       }
 
+      if (!data.pdfContent || data.pdfContent.trim().length < 100) {
+        console.error('PDF content is empty or too short:', data.pdfContent?.length || 0);
+        toast({
+          title: "PDF Generation Warning",
+          description: "AI content generation failed. Using basic report format.",
+          variant: "destructive",
+        });
+        
+        // Fallback to basic PDF without AI content
+        const reportData: PDFReportData = {
+          predictedFault: result.primary.fault,
+          confidence: result.primary.confidence * 100,
+          severity: result.primary.severity,
+          explanation: result.primary.explanation,
+          recommendedActions: result.primary.actions.join(". "),
+          description: description
+        };
+
+        const pdfGenerator = new PDFReportGenerator();
+        pdfGenerator.generatePDF(reportData);
+        
+        toast({
+          title: "PDF Downloaded",
+          description: "Basic diagnostic report has been downloaded.",
+        });
+        return;
+      }
+
+      // Generate PDF with AI content
       const reportData: PDFReportData = {
         predictedFault: result.primary.fault,
-        confidence: result.primary.confidence * 100, // Convert to percentage
+        confidence: result.primary.confidence * 100,
         severity: result.primary.severity,
         explanation: result.primary.explanation,
-        recommendedActions: result.primary.actions.join(" "),
+        recommendedActions: result.primary.actions.join(". "),
         description: description,
-        pdfContent: pdfContent
+        pdfContent: data.pdfContent
       };
 
       const pdfGenerator = new PDFReportGenerator();
       pdfGenerator.generatePDF(reportData);
 
       toast({
-        title: "PDF Generated",
-        description: "Your diagnostic report has been downloaded successfully.",
+        title: "PDF Downloaded",
+        description: "Professional diagnostic report has been generated and downloaded.",
       });
+
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
-        title: "Error",
+        title: "PDF Generation Failed",
         description: "Failed to generate PDF report. Please try again.",
         variant: "destructive",
       });

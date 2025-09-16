@@ -145,60 +145,73 @@ serve(async (req) => {
     let pdfContent = null;
     if (generatePDFContent && openRouterApiKey) {
       try {
-        const pdfPrompt = `Generate a comprehensive vehicle diagnostic report based on the following information:
-        
-Problem Description: ${description}
-Primary Fault: ${finalFaultPart}
-Confidence: ${Math.round(confidence * 100)}%
-Severity: ${severity}
-Explanation: ${explanation}
-Recommended Actions: ${solution}
+        const pdfPrompt = `Based on the vehicle diagnostic analysis, create a comprehensive professional diagnostic report. 
 
-Please create a detailed, professional diagnostic report in the following format:
+CRITICAL FORMATTING REQUIREMENTS:
+- Use ONLY plain text, NO markdown formatting
+- NO asterisks (**), NO hash symbols (##), NO special characters
+- Use UPPERCASE for section headers
+- Use simple dashes (-) for bullet points
+- Keep sentences clear and professional
+- Separate sections with blank lines
 
-VEHICLE DIAGNOSTIC REPORT
-========================
+Create the report in this EXACT format:
 
 EXECUTIVE SUMMARY
-- Primary Fault: ${finalFaultPart}
-- Severity Level: ${severity.toUpperCase()}
-- Confidence Level: ${Math.round(confidence * 100)}%
-- Safety Impact: [brief assessment based on severity]
+Primary Fault: ${finalFaultPart}
+Severity Level: ${severity.toUpperCase()}
+Confidence Level: ${Math.round(confidence * 100)}%
+Safety Impact: Write 1-2 sentences about safety implications based on the severity level
 
-PROBLEM DESCRIPTION
-- Symptoms Reported: ${description}
-- Analysis Date: ${new Date().toLocaleDateString()}
-- Diagnostic Method: AI-Powered Analysis
+PROBLEM DESCRIPTION  
+Symptoms Reported: ${description}
+Analysis Date: ${new Date().toLocaleDateString()}
+Diagnostic Method: AI-Powered Analysis
+Vehicle Condition: Brief assessment of current operational state
 
 DETAILED DIAGNOSIS
-- Root Cause Analysis: [detailed technical explanation]
-- Technical Details: [component-specific information]
-- System Impact: [how this affects the vehicle]
+Root Cause Analysis: Explain the underlying cause of the fault in 2-3 clear sentences
+Technical Details: Describe how the affected system works and what specifically has failed
+System Impact: Explain how this fault affects overall vehicle operation and performance
+Diagnostic Confidence: Justify the confidence level with technical reasoning
 
 RECOMMENDED SOLUTION
-- Immediate Actions: [what to do right now]
-- Repair Procedures: [step-by-step instructions]
-- Parts Required: [estimated components needed]
-- Professional Services: [when to seek mechanic help]
+Immediate Actions:
+- First priority action to take right now
+- Second priority safety or diagnostic step
+- Third action to prevent further damage
+
+Repair Procedures:
+1. First step of the repair process
+2. Second step with specific details
+3. Third step including any special tools needed
+4. Final verification or testing step
+
+Parts Required:
+- Primary part name with estimated cost range
+- Secondary components that may be needed
+- Any consumables or fluids required
+
+Professional Services: When to seek qualified mechanic assistance
 
 SAFETY CONSIDERATIONS
-- [Specific safety warnings for this fault]
-- [Driving restrictions if any]
+Immediate Safety Warnings: Critical safety information for this specific fault
+Work Safety Precautions: Safety measures for any DIY diagnostic work
+Driving Restrictions: Any limitations on vehicle operation until repaired
 
 COST ESTIMATES
-- Parts: [rough estimate range]
-- Labor: [estimated hours and cost range]
-- Total: [combined estimate]
+Parts Cost: $XX to $XXX range based on vehicle type
+Labor Time: X to X hours estimated
+Labor Cost: $XX to $XXX range at standard rates
+Total Estimated Cost: $XXX to $XXX complete repair cost
 
 FOLLOW-UP RECOMMENDATIONS
-- [Maintenance tips to prevent recurrence]
-- [Monitoring advice]
-- [When to seek professional consultation]
+Preventive Maintenance: Specific steps to prevent this issue from recurring
+Warning Signs to Monitor: Early symptoms to watch for in the future
+Maintenance Schedule: Recommended service intervals for related systems
+When to Return for Service: Clear guidelines for follow-up inspections
 
-DISCLAIMER
-This AI-powered diagnostic report is for informational purposes only. Professional mechanical inspection is recommended for accurate diagnosis and safe repairs.
-
-Format this as a clean, professional report with clear sections and proper formatting.`;
+Provide detailed, professional content for each section using ONLY the plain text formatting shown above. Do not use any markdown symbols or special formatting characters.`;
 
         const pdfResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -211,24 +224,32 @@ Format this as a clean, professional report with clear sections and proper forma
             messages: [
               {
                 role: 'system',
-                content: 'You are a professional automotive diagnostic expert. Generate comprehensive, technical, and well-structured diagnostic reports.'
+                content: 'You are a professional automotive diagnostic expert. Generate comprehensive diagnostic reports using ONLY plain text formatting. Never use markdown symbols like **, ##, or other special formatting characters. Use UPPERCASE for section headers and simple dashes for bullet points.'
               },
               {
                 role: 'user',
                 content: pdfPrompt
               }
             ],
-            max_tokens: 2000,
-            temperature: 0.3
+            max_tokens: 2500,
+            temperature: 0.2
           })
         });
 
         if (pdfResponse.ok) {
           const pdfData = await pdfResponse.json();
-          pdfContent = pdfData.choices[0]?.message?.content || null;
-          console.log('PDF content generated successfully');
+          const rawContent = pdfData.choices[0]?.message?.content;
+          
+          if (rawContent && rawContent.trim().length > 100) {
+            pdfContent = rawContent.trim();
+            console.log('PDF content generated successfully, length:', pdfContent.length);
+          } else {
+            console.error('PDF content too short or empty:', rawContent?.length || 0);
+            pdfContent = null;
+          }
         } else {
-          console.error('Failed to generate PDF content:', pdfResponse.statusText);
+          const errorText = await pdfResponse.text();
+          console.error('Failed to generate PDF content:', pdfResponse.status, errorText);
         }
       } catch (pdfError) {
         console.error('Error generating PDF content:', pdfError);
