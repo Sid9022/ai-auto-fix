@@ -43,22 +43,42 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = isSignUp 
-      ? await signUp(email, password)
-      : await signIn(email, password);
+    console.log('Starting email auth...');
+    
+    try {
+      const { error } = isSignUp 
+        ? await signUp(email, password)
+        : await signIn(email, password);
 
-    if (error) {
+      console.log('Auth result:', { error });
+      
+      if (error) {
+        toast({
+          title: isSignUp ? "Sign up failed" : "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (isSignUp) {
+        toast({
+          title: "Check your email",
+          description: "We sent you a confirmation link to complete signup.",
+        });
+      } else {
+        // For successful sign in, show success message
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error in handleEmailAuth:', error);
       toast({
-        title: isSignUp ? "Sign up failed" : "Sign in failed",
-        description: error.message,
+        title: "Unexpected error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-    } else if (isSignUp) {
-      toast({
-        title: "Check your email",
-        description: "We sent you a confirmation link to complete signup.",
-      });
     }
+    
     setLoading(false);
   };
 
