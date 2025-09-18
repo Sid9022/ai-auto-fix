@@ -1,0 +1,17 @@
+name: Keep Hugging Face Space Alive
+
+on:
+  schedule:
+    # Run every 11 hours
+    - cron: "0 */11 * * *"
+  workflow_dispatch: # lets you run it manually
+
+jobs:
+  ping-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Hugging Face Space API
+        run: |
+          curl -X POST https://kingkill1111-vehicle-diagnosis-ai.hf.space/run/predict \
+          -H "Content-Type: application/json" \
+          -d '{"data": ["keep alive"]}'
