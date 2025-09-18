@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Gauge, Shield, Sparkles, User, LogOut } from "lucide-react";
+import { Stethoscope, Shield, Zap, User, LogOut, ChevronRight, History as HistoryIcon } from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth";
 import DiagnosticForm from "@/components/DiagnosticForm";
 
@@ -76,6 +76,17 @@ const Index = () => {
                   <User className="h-4 w-4" />
                   <span className="truncate max-w-32 md:max-w-none">{user.email}</span>
                 </div>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <a href="/history">
+                    <HistoryIcon className="h-4 w-4" />
+                    History
+                  </a>
+                </Button>
                 <Button variant="outline" onClick={handleSignOut} size="sm" className="sm:size-default">
                   <LogOut className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Sign out</span>
@@ -108,17 +119,17 @@ const Index = () => {
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button variant="hero" size="lg" asChild className="w-full sm:w-auto">
-                <a href="#diagnose"><Wrench className="mr-2" /> Diagnose my car</a>
+                <a href="#diagnose"><Stethoscope className="mr-2" /> Diagnose my car</a>
               </Button>
               <Button variant="secondary" size="lg" asChild className="w-full sm:w-auto">
-                <a href="#how-it-works"><Sparkles className="mr-2" /> How it works</a>
+                <a href="#how-it-works"><Zap className="mr-2" /> How it works</a>
               </Button>
             </div>
 
             <div className="mt-12 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="hover-lift">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-                  <Wrench className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <Stethoscope className="h-5 w-5 flex-shrink-0 text-primary" />
                   <div className="text-center sm:text-left">
                     <p className="font-semibold">Text-based diagnosis</p>
                     <p className="text-sm text-muted-foreground">Type symptoms; get likely fault and actions.</p>
@@ -127,7 +138,7 @@ const Index = () => {
               </Card>
               <Card className="hover-lift">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-                  <Gauge className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <Zap className="h-5 w-5 flex-shrink-0 text-primary" />
                   <div className="text-center sm:text-left">
                     <p className="font-semibold">Confidence scoring</p>
                     <p className="text-sm text-muted-foreground">See confidence and other possibilities.</p>

@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Wrench, Lightbulb, Loader2, Gauge, ShieldCheck, Settings, ExternalLink, FileDown } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { PDFReportGenerator, type PDFReportData } from "@/lib/pdfGenerator";
+import React, { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Wrench, AlertCircle, Download, Settings, AlertTriangle, Lightbulb, Gauge, ShieldCheck, ExternalLink, FileDown } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { generatePDF } from '@/lib/pdfGenerator';
+import { useToast } from '@/hooks/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useHistory } from '@/hooks/useHistory';
 
 export type Severity = "low" | "medium" | "high";
 
@@ -182,13 +183,14 @@ function formatConfidence(n: number) {
   return `${Math.round(n * 100)}%`;
 }
 
-export default function DiagnosticForm() {
-  const [description, setDescription] = useState("");
-  const [modelName, setModelName] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
+const DiagnosticForm: React.FC = () => {
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [result, setResult] = useState<AnalysisOutput | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const { toast } = useToast();
+  const { addToHistory } = useHistory();
 
   const severityBadge: Record<Severity, { label: string; variant: "default" | "secondary" | "destructive" }> = useMemo(
     () => ({
@@ -210,6 +212,7 @@ export default function DiagnosticForm() {
     }
 
     setLoading(true);
+    const startTime = Date.now();
     
     try {
       const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
@@ -222,11 +225,35 @@ export default function DiagnosticForm() {
         throw error;
       }
 
-      setResult(data);
-      toast({
-        title: "AI Diagnosis Complete",
-        description: "Your vehicle symptoms have been analyzed successfully",
-      });
+      if (data && data.primary) {
+        const analysisResult: AnalysisOutput = {
+          primary: data.primary,
+          alternatives: data.alternatives || []
+        };
+        setResult(analysisResult);
+        
+        // Save to history
+        await addToHistory({
+          description,
+          predicted_fault: data.primary.fault,
+          confidence: data.primary.confidence,
+          severity: data.primary.severity,
+          explanation: data.primary.explanation,
+          recommended_actions: data.primary.actions,
+          alternatives: data.alternatives || [],
+          pdf_content: data.pdfContent || undefined,
+          model_used: 'ai-diagnosis',
+          analysis_duration: Date.now() - startTime
+        });
+        
+        toast({
+          title: "Diagnosis Complete",
+          description: "AI analysis completed successfully and saved to history!",
+        });
+      } else {
+        throw new Error('Invalid response from AI diagnosis');
+      }
+      
     } catch (error) {
       console.error('Diagnosis error:', error);
       toast({
@@ -234,9 +261,29 @@ export default function DiagnosticForm() {
         description: "Using fallback analysis. Please check your model settings.",
         variant: "destructive"
       });
-      // Fallback to local analysis
-      const out = analyzeDescription(description);
-      setResult(out);
+      // Fallback to rules-based analysis
+      console.log('Using fallback rules-based analysis');
+      const fallbackResult = analyzeDescription(description);
+      setResult(fallbackResult);
+      
+      // Save fallback result to history
+      await addToHistory({
+        description,
+        predicted_fault: fallbackResult.primary.fault,
+        confidence: fallbackResult.primary.confidence,
+        severity: fallbackResult.primary.severity,
+        explanation: fallbackResult.primary.explanation,
+        recommended_actions: fallbackResult.primary.actions,
+        alternatives: fallbackResult.alternatives || [],
+        model_used: 'rules-based',
+        analysis_duration: Date.now() - startTime
+      });
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Used local analysis (AI service unavailable) and saved to history",
+        variant: "default",
+      });
     }
     
     setLoading(false);
@@ -247,70 +294,28 @@ export default function DiagnosticForm() {
 
     setPdfLoading(true);
     try {
-      console.log('Starting PDF generation with AI content...');
-
-      // Always generate fresh PDF content for better quality
-      const { data, error } = await supabase.functions.invoke('vehicle-diagnosis', {
-        body: { description: description.trim(), generatePDFContent: true }
-      });
-
-      if (error) {
-        console.error('PDF generation error:', error);
-        throw error;
-      }
-
-      if (!data.pdfContent || data.pdfContent.trim().length < 100) {
-        console.error('PDF content is empty or too short:', data.pdfContent?.length || 0);
-        toast({
-          title: "PDF Generation Warning",
-          description: "AI content generation failed. Using basic report format.",
-          variant: "destructive",
-        });
-        
-        // Fallback to basic PDF without AI content
-        const reportData: PDFReportData = {
-          predictedFault: result.primary.fault,
+      await generatePDF({
+        description,
+        primaryDiagnosis: {
+          fault: result.primary.fault,
           confidence: result.primary.confidence * 100,
-          severity: result.primary.severity,
+          severity: result.primary.severity as 'low' | 'medium' | 'high',
           explanation: result.primary.explanation,
-          recommendedActions: result.primary.actions.join(". "),
-          description: description
-        };
-
-        const pdfGenerator = new PDFReportGenerator();
-        pdfGenerator.generatePDF(reportData);
-        
-        toast({
-          title: "PDF Downloaded",
-          description: "Basic diagnostic report has been downloaded.",
-        });
-        return;
-      }
-
-      // Generate PDF with AI content
-      const reportData: PDFReportData = {
-        predictedFault: result.primary.fault,
-        confidence: result.primary.confidence * 100,
-        severity: result.primary.severity,
-        explanation: result.primary.explanation,
-        recommendedActions: result.primary.actions.join(". "),
-        description: description,
-        pdfContent: data.pdfContent
-      };
-
-      const pdfGenerator = new PDFReportGenerator();
-      pdfGenerator.generatePDF(reportData);
-
-      toast({
-        title: "PDF Downloaded",
-        description: "Professional diagnostic report has been generated and downloaded.",
+          actions: result.primary.actions
+        },
+        alternatives: result.alternatives || [],
+        pdfContent: null
       });
-
+      
+      toast({
+        title: "PDF Generated",
+        description: "Diagnostic report downloaded successfully",
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
-        title: "PDF Generation Failed",
-        description: "Failed to generate PDF report. Please try again.",
+        title: "Error",
+        description: "Failed to generate PDF report",
         variant: "destructive",
       });
     } finally {
@@ -462,5 +467,4 @@ export default function DiagnosticForm() {
         </CardContent>
       </Card>
     </section>
-  );
-}
+export default DiagnosticForm;

@@ -2,3 +2,6 @@ project_id = "pxjebmhdropbidsvxply"
 
 [functions.vehicle-diagnosis]
 verify_jwt = false
+
+[functions.cleanup-history]
+verify_jwt = false

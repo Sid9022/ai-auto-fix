@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      diagnostic_history: {
+        Row: {
+          alternatives: Json | null
+          analysis_duration: number | null
+          confidence: number
+          created_at: string
+          description: string
+          expires_at: string
+          explanation: string
+          id: string
+          is_favorite: boolean
+          model_used: string | null
+          pdf_content: string | null
+          predicted_fault: string
+          recommended_actions: string[] | null
+          severity: string
+          updated_at: string
+          user_id: string
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          alternatives?: Json | null
+          analysis_duration?: number | null
+          confidence: number
+          created_at?: string
+          description: string
+          expires_at?: string
+          explanation: string
+          id?: string
+          is_favorite?: boolean
+          model_used?: string | null
+          pdf_content?: string | null
+          predicted_fault: string
+          recommended_actions?: string[] | null
+          severity: string
+          updated_at?: string
+          user_id: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          alternatives?: Json | null
+          analysis_duration?: number | null
+          confidence?: number
+          created_at?: string
+          description?: string
+          expires_at?: string
+          explanation?: string
+          id?: string
+          is_favorite?: boolean
+          model_used?: string | null
+          pdf_content?: string | null
+          predicted_fault?: string
+          recommended_actions?: string[] | null
+          severity?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -46,7 +112,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_history: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
