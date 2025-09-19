@@ -1,0 +1,39 @@
+name: Keep Supabase Alive
+
+# Schedule: every 5 days at 00:00 UTC. Adjust if you want a different time.
+on:
+  schedule:
+    - cron: "0 0 */5 * *"
+  workflow_dispatch: # allows manual runs from the Actions UI
+
+permissions:
+  contents: read
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase via REST (simple)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          echo "Pinging Supabase..."
+          # Option A: If you have a public table, replace `your_table` with the table name:
+          # HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          #   -X GET "${SUPABASE_URL}/rest/v1/your_table?select=1" \
+          #   -H "apikey: ${SUPABASE_ANON_KEY}" \
+          #   -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          #
+          # Option B (safer / generic): If you have a lightweight health endpoint in your app that touches Supabase,
+          # replace HEALTH_URL with that endpoint (e.g., https://yourapp.example.com/api/health).
+          # HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://yourapp.example.com/api/health")
+          #
+          # Example fallback: try the project root (may return 200 even without DB access)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${SUPABASE_URL}")
+          echo "Supabase ping HTTP status: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "Warning: ping returned non-200/204 status. Check SUPABASE_URL and anon key or set a public endpoint to ping."
+            exit 1
+          fi
+          echo "✅ Supabase keep-alive ping succeeded"
