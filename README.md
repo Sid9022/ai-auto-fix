@@ -10,7 +10,7 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/be0e4823-ea8c-458f-9e97-fcf442fe5a7f) and start prompting.
+Simply visit the [Lovable Project](https://autosenseai.netlify.app) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
