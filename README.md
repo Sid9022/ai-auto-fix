@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/be0e4823-ea8c-458f-9e97-fcf442fe5a7f
+**URL**: https://autosenseai.netlify.app
 
 ## How can I edit this code?
 
