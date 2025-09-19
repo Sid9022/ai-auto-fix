@@ -467,4 +467,7 @@ const DiagnosticForm: React.FC = () => {
         </CardContent>
       </Card>
     </section>
+  );
+};
+
 export default DiagnosticForm;
