@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Star, Clock, Calendar, Download, Trash2, RefreshCw, Search } from 'lucide-react';
 import { useHistory } from '@/hooks/useHistory';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ export default function History() {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.title = 'Diagnostic History - AI Vehicle Diagnostic';
@@ -82,7 +84,7 @@ export default function History() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         <Alert>
           <AlertDescription>
             Please sign in to view your diagnostic history.
@@ -93,43 +95,43 @@ export default function History() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">Diagnostic History</h1>
-        <p className="text-muted-foreground">
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Diagnostic History</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           View your past vehicle diagnoses. Records auto-delete after 7 days unless favorited.
         </p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search your diagnostic history..."
+            placeholder={isMobile ? "Search history..." : "Search your diagnostic history..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-base"
           />
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Loading history...</span>
+        <div className="flex items-center justify-center py-8 sm:py-12">
+          <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-primary" />
+          <span className="ml-2 text-sm sm:text-base text-muted-foreground">Loading history...</span>
         </div>
       ) : filteredHistory.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No diagnostic history yet</h3>
-            <p className="text-muted-foreground">
+          <CardContent className="py-8 sm:py-12 text-center">
+            <Clock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold mb-2">No diagnostic history yet</h3>
+            <p className="text-sm sm:text-base text-muted-foreground px-4">
               {searchTerm ? 'No results found for your search.' : 'Start diagnosing your vehicle to build your history.'}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredHistory.map((item) => {
             const daysRemaining = getDaysRemaining(item.expires_at, item.is_favorite);
             const isExpired = daysRemaining === 0 && !item.is_favorite;
@@ -137,66 +139,69 @@ export default function History() {
             
             return (
               <Card key={item.id} className={`transition-all ${isExpired ? 'opacity-60' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="truncate">{item.predicted_fault}</span>
-                        <Badge variant={getSeverityColor(item.severity)}>
+                        <Badge variant={getSeverityColor(item.severity)} className="self-start sm:self-auto">
                           {item.severity}
                         </Badge>
                       </CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-2">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(item.created_at).toLocaleDateString()}
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span>{new Date(item.created_at).toLocaleDateString()}</span>
                         </div>
                         <div>Confidence: {item.confidence}%</div>
                         {daysRemaining !== null && (
                           <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {daysRemaining > 0 ? `${daysRemaining} days left` : 'Expires today'}
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span>{daysRemaining > 0 ? `${daysRemaining} days left` : 'Expires today'}</span>
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 self-start sm:self-auto">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size={isMobile ? "sm" : "sm"}
                         onClick={() => toggleFavorite(item.id, !item.is_favorite)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                        <Star className={`h-3 w-3 sm:h-4 sm:w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size={isMobile ? "sm" : "sm"}
                         onClick={() => handleGeneratePDF(item)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size={isMobile ? "sm" : "sm"}
                         onClick={() => deleteHistoryItem(item.id)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div>
-                      <strong className="text-sm">Symptoms:</strong>
-                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                      <strong className="text-xs sm:text-sm">Symptoms:</strong>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
                     </div>
                     
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setExpandedCard(isExpanded ? null : item.id)}
-                      className="p-0 h-auto text-primary hover:no-underline"
+                      className="p-0 h-auto text-primary hover:no-underline text-xs sm:text-sm"
                     >
                       {isExpanded ? 'Show less' : 'Show details'}
                     </Button>
@@ -204,16 +209,16 @@ export default function History() {
                     {isExpanded && (
                       <div className="space-y-3 pt-3 border-t">
                         <div>
-                          <strong className="text-sm">Analysis:</strong>
-                          <p className="text-sm text-muted-foreground mt-1">{item.explanation}</p>
+                          <strong className="text-xs sm:text-sm">Analysis:</strong>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">{item.explanation}</p>
                         </div>
                         
                         {item.recommended_actions.length > 0 && (
                           <div>
-                            <strong className="text-sm">Recommended Actions:</strong>
-                            <ul className="list-disc list-inside text-sm text-muted-foreground mt-1 space-y-1">
+                            <strong className="text-xs sm:text-sm">Recommended Actions:</strong>
+                            <ul className="list-disc list-inside text-xs sm:text-sm text-muted-foreground mt-1 space-y-1 pl-2">
                               {item.recommended_actions.map((action, index) => (
-                                <li key={index}>{action}</li>
+                                <li key={index} className="leading-relaxed">{action}</li>
                               ))}
                             </ul>
                           </div>
@@ -221,12 +226,12 @@ export default function History() {
                         
                         {item.alternatives && item.alternatives.length > 0 && (
                           <div>
-                            <strong className="text-sm">Alternative Possibilities:</strong>
+                            <strong className="text-xs sm:text-sm">Alternative Possibilities:</strong>
                             <div className="mt-1 space-y-2">
-                              {item.alternatives.map((alt: any, index: number) => (
-                                <div key={index} className="text-sm">
-                                  <Badge variant="outline" className="mr-2">{alt.confidence}%</Badge>
-                                  <span className="text-muted-foreground">{alt.fault}</span>
+                              {item.alternatives.map((alt: { fault: string; confidence: number }, index: number) => (
+                                <div key={index} className="text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                  <Badge variant="outline" className="text-xs self-start sm:self-auto">{alt.confidence}%</Badge>
+                                  <span className="text-muted-foreground leading-relaxed">{alt.fault}</span>
                                 </div>
                               ))}
                             </div>
