@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Stethoscope, Shield, Zap, User, LogOut, ChevronRight, History as HistoryIcon } from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth";
 import DiagnosticForm from "@/components/DiagnosticForm";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ParticleBackground } from "@/components/ParticleBackground";
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement | null>(null);
@@ -61,8 +63,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <header className="container mx-auto px-4 py-6 animate-fade-in">
+    <div className="min-h-screen relative">
+      {/* Particle Background */}
+      <ParticleBackground className="opacity-60" particleCount={80} />
+      
+      <header className="container mx-auto px-4 py-6 animate-fade-in relative z-10">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2 animate-slide-in-left">
             <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow hover-scale" aria-hidden />
@@ -70,6 +75,7 @@ const Index = () => {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap animate-slide-in-right">
+            <ThemeToggle />
             {user ? (
               <>
                 <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground animate-scale-in animate-delay-100">
@@ -107,7 +113,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main>
+      <main className="relative z-10">
         {/* Hero */}
         <section ref={heroRef} onMouseMove={onHeroMouseMove} className="bg-spotlight bg-particles overflow-hidden">
           <div className="container mx-auto px-4 py-16 md:py-24 text-center">
@@ -127,7 +133,7 @@ const Index = () => {
             </div>
 
             <div className="mt-12 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card className="hover-lift hover-glow glass border-0 shadow-soft animate-slide-in-left animate-delay-100">
+              <Card className="hover-lift hover-glow glass-enhanced border-0 shadow-soft animate-slide-in-left animate-delay-100">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
                   <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
                     <Stethoscope className="h-5 w-5 flex-shrink-0 text-primary" />
@@ -138,7 +144,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift hover-glow glass border-0 shadow-soft animate-slide-up animate-delay-200">
+              <Card className="hover-lift hover-glow glass-enhanced border-0 shadow-soft animate-slide-up animate-delay-200">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
                   <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
                     <Zap className="h-5 w-5 flex-shrink-0 text-primary" />
@@ -149,7 +155,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift hover-glow glass border-0 shadow-soft sm:col-span-2 lg:col-span-1 animate-slide-in-right animate-delay-300">
+              <Card className="hover-lift hover-glow glass-enhanced border-0 shadow-soft sm:col-span-2 lg:col-span-1 animate-slide-in-right animate-delay-300">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
                   <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
                     <Shield className="h-5 w-5 flex-shrink-0 text-primary" />

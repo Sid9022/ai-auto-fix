@@ -53,6 +53,14 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Enhanced theme variables for particles and effects */
+    --particle-primary: 221.2 83.2% 53.3%;
+    --particle-secondary: 264 83% 70%;
+    --glow-primary: 221.2 83.2% 53.3%;
+    --glow-secondary: 264 83% 70%;
+    --glass-bg: 0 0% 100% / 0.05;
+    --glass-border: 0 0% 100% / 0.1;
   }
 
   .dark {
@@ -91,6 +99,14 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Enhanced dark theme variables */
+    --particle-primary: 217.2 91.2% 59.8%;
+    --particle-secondary: 280 100% 80%;
+    --glow-primary: 217.2 91.2% 59.8%;
+    --glow-secondary: 280 100% 80%;
+    --glass-bg: 0 0% 0% / 0.1;
+    --glass-border: 255 255 255 / 0.1;
   }
 }
 
@@ -229,12 +245,57 @@ All colors MUST be HSL.
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Particle effect background */
+  /* Enhanced Particle Effects */
+  .bg-particles {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-particles::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 20% 20%, hsla(var(--particle-primary), 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, hsla(var(--particle-secondary), 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 60%, hsla(var(--primary), 0.05) 0%, transparent 50%);
+    opacity: 0.6;
+    animation: particle-float 20s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Enhanced Glass Morphism */
+  .glass-enhanced {
+    background: hsla(var(--glass-bg));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsla(var(--glass-border));
+    box-shadow: 0 8px 32px 0 hsla(var(--primary), 0.1);
+  }
+
+  /* Theme Transition */
+  * {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Enhanced Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsla(var(--glow-primary), 0.3);
+  }
+
+  .glow-secondary {
+    box-shadow: 0 0 20px hsla(var(--glow-secondary), 0.3);
+  }
+
+  /* Update existing bg-particles to use new variables */
   .bg-particles {
     background-image: 
-      radial-gradient(circle at 20% 30%, hsl(var(--brand) / 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 70% 80%, hsl(var(--accent) / 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 90% 10%, hsl(var(--brand) / 0.05) 0%, transparent 50%);
+      radial-gradient(circle at 20% 30%, hsla(var(--particle-primary), 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 70% 80%, hsla(var(--particle-secondary), 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 90% 10%, hsla(var(--glow-primary), 0.04) 0%, transparent 50%);
     animation: particleMove 20s ease-in-out infinite alternate;
   }
 }
