@@ -93,22 +93,22 @@ export default function History() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">Diagnostic History</h1>
-        <p className="text-muted-foreground">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">Diagnostic History</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           View your past vehicle diagnoses. Records auto-delete after 7 days unless favorited.
         </p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search your diagnostic history..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm sm:text-base"
           />
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function History() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredHistory.map((item) => {
             const daysRemaining = getDaysRemaining(item.expires_at, item.is_favorite);
             const isExpired = daysRemaining === 0 && !item.is_favorite;
@@ -137,83 +137,88 @@ export default function History() {
             
             return (
               <Card key={item.id} className={`transition-all ${isExpired ? 'opacity-60' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <span className="truncate">{item.predicted_fault}</span>
-                        <Badge variant={getSeverityColor(item.severity)}>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className="truncate pr-2">{item.predicted_fault}</span>
+                        <Badge variant={getSeverityColor(item.severity)} className="self-start sm:self-center">
                           {item.severity}
                         </Badge>
                       </CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-2">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(item.created_at).toLocaleDateString()}
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">{new Date(item.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div>Confidence: {item.confidence}%</div>
+                        <div className="text-xs sm:text-sm">Confidence: {item.confidence}%</div>
                         {daysRemaining !== null && (
                           <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {daysRemaining > 0 ? `${daysRemaining} days left` : 'Expires today'}
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">
+                              {daysRemaining > 0 ? `${daysRemaining} days left` : 'Expires today'}
+                            </span>
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleFavorite(item.id, !item.is_favorite)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                        <Star className={`h-3 w-3 sm:h-4 sm:w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleGeneratePDF(item)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteHistoryItem(item.id)}
+                        className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div>
-                      <strong className="text-sm">Symptoms:</strong>
-                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                      <strong className="text-xs sm:text-sm font-medium">Symptoms:</strong>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
                     </div>
                     
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setExpandedCard(isExpanded ? null : item.id)}
-                      className="p-0 h-auto text-primary hover:no-underline"
+                      className="p-0 h-auto text-primary hover:no-underline text-xs sm:text-sm"
                     >
                       {isExpanded ? 'Show less' : 'Show details'}
                     </Button>
                     
                     {isExpanded && (
-                      <div className="space-y-3 pt-3 border-t">
+                      <div className="space-y-3 sm:space-y-4 pt-3 border-t">
                         <div>
-                          <strong className="text-sm">Analysis:</strong>
-                          <p className="text-sm text-muted-foreground mt-1">{item.explanation}</p>
+                          <strong className="text-xs sm:text-sm font-medium">Analysis:</strong>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">{item.explanation}</p>
                         </div>
                         
                         {item.recommended_actions.length > 0 && (
                           <div>
-                            <strong className="text-sm">Recommended Actions:</strong>
-                            <ul className="list-disc list-inside text-sm text-muted-foreground mt-1 space-y-1">
+                            <strong className="text-xs sm:text-sm font-medium">Recommended Actions:</strong>
+                            <ul className="list-disc list-inside text-xs sm:text-sm text-muted-foreground mt-1 space-y-1 ml-2 sm:ml-0">
                               {item.recommended_actions.map((action, index) => (
-                                <li key={index}>{action}</li>
+                                <li key={index} className="leading-relaxed">{action}</li>
                               ))}
                             </ul>
                           </div>
@@ -221,12 +226,12 @@ export default function History() {
                         
                         {item.alternatives && item.alternatives.length > 0 && (
                           <div>
-                            <strong className="text-sm">Alternative Possibilities:</strong>
+                            <strong className="text-xs sm:text-sm font-medium">Alternative Possibilities:</strong>
                             <div className="mt-1 space-y-2">
                               {item.alternatives.map((alt: any, index: number) => (
-                                <div key={index} className="text-sm">
-                                  <Badge variant="outline" className="mr-2">{alt.confidence}%</Badge>
-                                  <span className="text-muted-foreground">{alt.fault}</span>
+                                <div key={index} className="flex items-start gap-2 text-xs sm:text-sm">
+                                  <Badge variant="outline" className="text-xs shrink-0">{alt.confidence}%</Badge>
+                                  <span className="text-muted-foreground leading-relaxed">{alt.fault}</span>
                                 </div>
                               ))}
                             </div>
