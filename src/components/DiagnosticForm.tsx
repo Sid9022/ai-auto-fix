@@ -324,11 +324,11 @@ const DiagnosticForm: React.FC = () => {
   };
 
   return (
-    <section id="diagnose" aria-labelledby="diagnose-title" className="w-full max-w-none">
-      <Card className="shadow-elevated">
+    <section id="diagnose" aria-labelledby="diagnose-title" className="w-full max-w-none animate-fade-in">
+      <Card className="shadow-elevated hover-lift border-0 glass backdrop-blur-sm">
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 animate-slide-in-left">
               <CardTitle id="diagnose-title" className="text-xl sm:text-2xl">AI Vehicle Diagnosis</CardTitle>
               <CardDescription className="text-sm sm:text-base">
                 Connect your trained model and get AI-powered fault detection with Gemini-generated solutions
@@ -338,7 +338,7 @@ const DiagnosticForm: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center gap-2 flex-shrink-0"
+              className="flex items-center gap-2 flex-shrink-0 hover-lift animate-slide-in-right"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Model Settings</span>
@@ -346,18 +346,18 @@ const DiagnosticForm: React.FC = () => {
           </div>
           
           {showSettings && (
-            <div className="mt-4 p-4 rounded-lg border bg-muted/50 space-y-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <ExternalLink className="h-3 w-3" />
+            <div className="mt-4 p-4 rounded-lg border bg-muted/50 space-y-3 animate-slide-up glass">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
+                <ExternalLink className="h-3 w-3 animate-pulse-slow" />
                 <span>Connected to: kingkill1111/vehicle-diagnosis-ai (Gradio)</span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground animate-fade-in animate-delay-100">
                 Using your trained model for fault prediction. OpenRouter Gemini generates solutions and handles unknown faults.
               </p>
             </div>
           )}
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-4 sm:p-6 animate-slide-up animate-delay-200">
           <form onSubmit={onSubmit} className="space-y-4">
             <label htmlFor="symptoms" className="sr-only">Problem description</label>
             <Textarea
@@ -366,10 +366,10 @@ const DiagnosticForm: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="min-h-[120px] sm:min-h-[140px]"
+              className="min-h-[120px] sm:min-h-[140px] transition-all duration-300 focus:scale-[1.02] focus:shadow-glow border-0 glass"
             />
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <Button type="submit" variant="hero" size="lg" disabled={loading} className="w-full sm:w-auto">
+              <Button type="submit" variant="hero" size="lg" disabled={loading} className="w-full sm:w-auto hover-lift hover-glow shadow-intense">
                 {loading ? (
                   <>
                     <Loader2 className="animate-spin mr-2" /> Analyzing with AI
@@ -387,7 +387,7 @@ const DiagnosticForm: React.FC = () => {
                   size="lg"
                   onClick={handleGeneratePDF}
                   disabled={pdfLoading}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto hover-lift animate-scale-in"
                 >
                   {pdfLoading ? (
                     <>
@@ -401,24 +401,26 @@ const DiagnosticForm: React.FC = () => {
                 </Button>
               )}
               <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                <Badge variant="secondary" className="bg-secondary/60 text-xs">AI-Powered Analysis</Badge>
-                <Badge variant="outline" className="text-xs">HuggingFace + OpenRouter</Badge>
+                <Badge variant="secondary" className="bg-secondary/60 text-xs animate-bounce-in animate-delay-100">AI-Powered Analysis</Badge>
+                <Badge variant="outline" className="text-xs animate-bounce-in animate-delay-200">HuggingFace + OpenRouter</Badge>
               </div>
             </div>
           </form>
 
           {result && (
-            <div className="mt-8 grid gap-4 lg:gap-6 lg:grid-cols-3">
-              <article className="lg:col-span-2 p-4 sm:p-6 rounded-lg border bg-card hover-lift">
+            <div className="mt-8 grid gap-4 lg:gap-6 lg:grid-cols-3 animate-fade-in">
+              <article className="lg:col-span-2 p-4 sm:p-6 rounded-lg glass border-0 bg-card hover-lift shadow-soft animate-slide-in-left">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-semibold flex items-center gap-2 flex-wrap">
-                      <AlertTriangle className="text-destructive flex-shrink-0" /> 
+                    <h3 className="text-lg sm:text-xl font-semibold flex items-center gap-2 flex-wrap animate-bounce-in">
+                      <div className="p-1 rounded-full bg-destructive/10 animate-pulse-slow">
+                        <AlertTriangle className="text-destructive flex-shrink-0" />
+                      </div>
                       <span className="break-words">Likely fault: {result.primary.fault}</span>
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">Confidence {formatConfidence(result.primary.confidence)}</p>
+                    <p className="mt-1 text-sm text-muted-foreground animate-fade-in animate-delay-100">Confidence {formatConfidence(result.primary.confidence)}</p>
                   </div>
-                  <Badge variant={severityBadge[result.primary.severity].variant} className="flex-shrink-0">
+                  <Badge variant={severityBadge[result.primary.severity].variant} className="flex-shrink-0 animate-scale-in animate-delay-200">
                     Severity: {severityBadge[result.primary.severity].label}
                   </Badge>
                 </div>
@@ -444,18 +446,21 @@ const DiagnosticForm: React.FC = () => {
                 </p>
               </article>
 
-              <aside aria-label="Other possibilities" className="p-4 sm:p-6 rounded-lg border bg-card hover-lift">
-                <h4 className="text-base font-semibold flex items-center gap-2">
-                  <Gauge className="flex-shrink-0" /> Other possibilities
+              <aside aria-label="Other possibilities" className="p-4 sm:p-6 rounded-lg glass border-0 bg-card hover-lift shadow-soft animate-slide-in-right">
+                <h4 className="text-base font-semibold flex items-center gap-2 animate-bounce-in">
+                  <div className="p-1 rounded-full bg-primary/10 animate-spin-slow">
+                    <Gauge className="flex-shrink-0" />
+                  </div>
+                  Other possibilities
                 </h4>
                 <div className="mt-3 space-y-3">
                   {result.alternatives.map((alt, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div key={i} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-fade-in animate-delay-${(i + 1) * 100}`}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium break-words">{alt.fault}</p>
                         <p className="text-xs text-muted-foreground">Confidence {formatConfidence(alt.confidence)}</p>
                       </div>
-                      <Badge variant={severityBadge[alt.severity].variant} className="flex-shrink-0 w-fit">
+                      <Badge variant={severityBadge[alt.severity].variant} className="flex-shrink-0 w-fit hover-scale">
                         {severityBadge[alt.severity].label}
                       </Badge>
                     </div>

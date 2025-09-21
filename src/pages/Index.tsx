@@ -62,17 +62,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <header className="container mx-auto px-4 py-6">
+      <header className="container mx-auto px-4 py-6 animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow" aria-hidden />
+          <div className="flex items-center gap-2 animate-slide-in-left">
+            <div className="h-8 w-8 rounded-md bg-gradient-primary animate-gradient-slow shadow-glow hover-scale" aria-hidden />
             <span className="text-lg font-semibold">AutoSense AI</span>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap animate-slide-in-right">
             {user ? (
               <>
-                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground animate-scale-in animate-delay-100">
                   <User className="h-4 w-4" />
                   <span className="truncate max-w-32 md:max-w-none">{user.email}</span>
                 </div>
@@ -80,26 +80,26 @@ const Index = () => {
                   asChild
                   variant="ghost"
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 hover-lift animate-scale-in animate-delay-200"
                 >
                   <a href="/history">
                     <HistoryIcon className="h-4 w-4" />
                     History
                   </a>
                 </Button>
-                <Button variant="outline" onClick={handleSignOut} size="sm" className="sm:size-default">
+                <Button variant="outline" onClick={handleSignOut} size="sm" className="sm:size-default hover-lift animate-scale-in animate-delay-300">
                   <LogOut className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Sign out</span>
                 </Button>
               </>
             ) : (
-              <Button asChild variant="hero" size="sm" className="sm:size-lg">
+              <Button asChild variant="hero" size="sm" className="sm:size-lg hover-lift hover-glow animate-scale-in">
                 <a href="/auth" aria-label="Sign in">Sign in</a>
               </Button>
             )}
             
             {user && (
-              <Button asChild variant="secondary" size="sm" className="sm:size-lg">
+              <Button asChild variant="secondary" size="sm" className="sm:size-lg hover-lift animate-scale-in animate-delay-400">
                 <a href="#diagnose" aria-label="Start diagnosis">Start diagnosis</a>
               </Button>
             )}
@@ -109,45 +109,51 @@ const Index = () => {
 
       <main>
         {/* Hero */}
-        <section ref={heroRef} onMouseMove={onHeroMouseMove} className="bg-spotlight">
+        <section ref={heroRef} onMouseMove={onHeroMouseMove} className="bg-spotlight bg-particles overflow-hidden">
           <div className="container mx-auto px-4 py-16 md:py-24 text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight animate-slide-up">
               AI Vehicle Diagnostic
             </h1>
-            <p className="mt-4 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+            <p className="mt-4 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4 animate-fade-in animate-delay-200">
               Describe your car's symptoms and get likely faults with step‑by‑step fixes. No hardware, no hassle.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button variant="hero" size="lg" asChild className="w-full sm:w-auto">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 animate-scale-in animate-delay-400">
+              <Button variant="hero" size="lg" asChild className="w-full sm:w-auto hover-lift hover-glow shadow-intense">
                 <a href="#diagnose"><Stethoscope className="mr-2" /> Diagnose my car</a>
               </Button>
-              <Button variant="secondary" size="lg" asChild className="w-full sm:w-auto">
+              <Button variant="secondary" size="lg" asChild className="w-full sm:w-auto hover-lift">
                 <a href="#how-it-works"><Zap className="mr-2" /> How it works</a>
               </Button>
             </div>
 
             <div className="mt-12 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card className="hover-lift">
+              <Card className="hover-lift hover-glow glass border-0 shadow-soft animate-slide-in-left animate-delay-100">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-                  <Stethoscope className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
+                    <Stethoscope className="h-5 w-5 flex-shrink-0 text-primary" />
+                  </div>
                   <div className="text-center sm:text-left">
                     <p className="font-semibold">Text-based diagnosis</p>
                     <p className="text-sm text-muted-foreground">Type symptoms; get likely fault and actions.</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift">
+              <Card className="hover-lift hover-glow glass border-0 shadow-soft animate-slide-up animate-delay-200">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-                  <Zap className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
+                    <Zap className="h-5 w-5 flex-shrink-0 text-primary" />
+                  </div>
                   <div className="text-center sm:text-left">
                     <p className="font-semibold">Confidence scoring</p>
                     <p className="text-sm text-muted-foreground">See confidence and other possibilities.</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover-lift sm:col-span-2 lg:col-span-1">
+              <Card className="hover-lift hover-glow glass border-0 shadow-soft sm:col-span-2 lg:col-span-1 animate-slide-in-right animate-delay-300">
                 <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-                  <Shield className="h-5 w-5 flex-shrink-0 text-primary" />
+                  <div className="p-2 rounded-full bg-brand/10 animate-pulse-slow">
+                    <Shield className="h-5 w-5 flex-shrink-0 text-primary" />
+                  </div>
                   <div className="text-center sm:text-left">
                     <p className="font-semibold">Safety first</p>
                     <p className="text-sm text-muted-foreground">Clear guidance when to stop and seek help.</p>
