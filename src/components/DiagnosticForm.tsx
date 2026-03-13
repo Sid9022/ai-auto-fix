@@ -352,7 +352,7 @@ const DiagnosticForm: React.FC = () => {
                 <span>Connected to: kingkill1111/vehicle-diagnosis-ai (Gradio)</span>
               </div>
               <p className="text-xs text-muted-foreground animate-fade-in animate-delay-100">
-                Using your trained model for fault prediction. OpenRouter Gemini generates solutions and handles unknown faults.
+                Using your trained model for fault prediction. Google Gemini AI generates solutions and handles unknown faults.
               </p>
             </div>
           )}
