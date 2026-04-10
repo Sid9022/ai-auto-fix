@@ -112,10 +112,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_history: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_expired_history: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
