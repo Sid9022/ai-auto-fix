@@ -235,26 +235,27 @@ const DiagnosticForm: React.FC = () => {
         // Save to history only if user is authenticated
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await addToHistory({
-          description,
-          predicted_fault: data.primary.fault,
-          confidence: data.primary.confidence,
-          severity: data.primary.severity,
-          explanation: data.primary.explanation,
-          recommended_actions: data.primary.actions,
-          alternatives: data.alternatives || [],
-          pdf_content: data.pdfContent || undefined,
-          model_used: 'ai-diagnosis',
-          analysis_duration: Date.now() - startTime
-        });
+            await addToHistory({
+              description,
+              predicted_fault: data.primary.fault,
+              confidence: data.primary.confidence,
+              severity: data.primary.severity,
+              explanation: data.primary.explanation,
+              recommended_actions: data.primary.actions,
+              alternatives: data.alternatives || [],
+              pdf_content: data.pdfContent || undefined,
+              model_used: 'ai-diagnosis',
+              analysis_duration: Date.now() - startTime
+            });
+          }
         
-        toast({
-          title: "Diagnosis Complete",
-          description: "AI analysis completed successfully and saved to history!",
-        });
-      } else {
-        throw new Error('Invalid response from AI diagnosis');
-      }
+          toast({
+            title: "Diagnosis Complete",
+            description: user ? "AI analysis completed successfully and saved to history!" : "AI analysis completed! Sign in to save to history.",
+          });
+        } else {
+          throw new Error('Invalid response from AI diagnosis');
+        }
       
     } catch (error) {
       console.error('Diagnosis error:', error);
