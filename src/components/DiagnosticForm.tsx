@@ -232,8 +232,10 @@ const DiagnosticForm: React.FC = () => {
         };
         setResult(analysisResult);
         
-        // Save to history
-        await addToHistory({
+        // Save to history only if user is authenticated
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await addToHistory({
           description,
           predicted_fault: data.primary.fault,
           confidence: data.primary.confidence,
