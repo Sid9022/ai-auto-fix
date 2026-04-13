@@ -16,8 +16,8 @@ function getAIConfig() {
     return {
       url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
       key: lovableApiKey,
-      model: 'google/gemini-2.0-flash-lite',
-      pdfModel: 'google/gemini-2.0-flash-lite',
+      model: 'google/gemini-2.5-flash-lite',
+      pdfModel: 'google/gemini-2.5-flash-lite',
     };
   }
   if (openRouterApiKey) {
